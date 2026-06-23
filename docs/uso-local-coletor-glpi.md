@@ -10,9 +10,12 @@ Arquivo: `src/AgenteSuporteGlpi/appsettings.json`
 
 - `Glpi:UrlBase`
 - `Glpi:Responsavel`
+- `Glpi:UserGlpiId`
+- `Glpi:StatusParaColetar`
 - `Glpi:LimiteChamadosPorExecucao`
 - `Browser:Headless`
 - `Browser:TimeoutMilissegundos`
+- `Browser:TimeoutEsperaAjaxMilissegundos`
 - `Banco:ConnectionString`
 
 ## Configuração Privada Local
