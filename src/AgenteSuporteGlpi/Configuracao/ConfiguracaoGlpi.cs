@@ -8,5 +8,5 @@ public sealed class ConfiguracaoGlpi
     public required string Responsavel { get; init; }
     public required string UserGlpiId { get; init; }
     public int LimiteChamadosPorExecucao { get; init; } = 5;
-    public required IReadOnlySet<int> StatusParaColetar { get; init; }
+    public required IReadOnlyList<int> StatusParaColetar { get; init; }
 }
