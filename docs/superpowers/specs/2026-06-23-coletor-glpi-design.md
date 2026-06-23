@@ -61,28 +61,34 @@ Exemplos aceitos por serem termos tecnicos:
 
 ## Arquitetura
 
-A primeira entrega deve nascer com separacao clara entre automacao web, regras e persistencia.
+A primeira entrega deve nascer simples: uma solution `.slnx`, um projeto console e um projeto de testes. A separacao entre automacao web, regras e persistencia sera feita por pastas e namespaces dentro do projeto `AgenteSuporteGlpi`, evitando multi-projeto no MVP.
 
 Projetos previstos:
 
-- `AgenteSuporteGlpi.Console`: entrada CLI, composicao de dependencias, leitura de configuracao e inicio da execucao.
-- `AgenteSuporteGlpi.Nucleo`: modelos e regras puras, sem dependencia de Playwright.
-- `AgenteSuporteGlpi.ColetaGlpi`: automacao web com Playwright .NET.
-- `AgenteSuporteGlpi.Persistencia`: acesso SQLite e historico de coleta.
+- `AgenteSuporteGlpi`: entrada CLI, composicao de dependencias, leitura de configuracao, regras puras, automacao Playwright e persistencia SQLite, organizados por pastas internas.
 - `AgenteSuporteGlpi.Testes`: testes automatizados de regras, filtros, parsing e persistencia sem abrir navegador.
+
+Pastas principais do projeto console:
+
+- `Chamados`: modelos, filtros, hash, deteccao de mudanca e repositorio de chamados.
+- `Contratos`: interfaces entre o fluxo principal e a coleta GLPI.
+- `ColetaGlpi`: automacao Playwright somente leitura e parsing HTML.
+- `Configuracao`: configuracoes GLPI e Browser.
+- `Banco`: configuracao e inicializacao SQLite.
+- `Execucoes`: modelos de execucao e eventos.
 
 Fluxo principal:
 
-1. `Console` inicia uma `ExecucaoColeta`.
+1. `Program.cs` inicia uma `ExecucaoColeta`.
 2. `ColetorGlpi` abre navegador em modo `Headless`.
 3. `ColetorGlpi` realiza login no GLPI.
 4. `ColetorGlpi` navega ate chamados atribuidos ao usuario configurado.
 5. `ColetorGlpi` coleta lista de chamados.
-6. `Nucleo` aplica filtros de status e elegibilidade.
+6. Regras em `Chamados` aplicam filtros de status e elegibilidade.
 7. `ColetorGlpi` abre cada chamado elegivel e coleta detalhes principais.
-8. `Nucleo` calcula hash de conteudo e identifica chamado novo ou alterado.
-9. `Persistencia` salva execucao, chamado, snapshot e eventos no SQLite.
-10. `Console` exibe resumo minimo da execucao.
+8. Regras em `Chamados` calculam hash de conteudo e identificam chamado novo ou alterado.
+9. Componentes em `Banco`, `Chamados` e `Execucoes` salvam execucao, chamado, snapshot e eventos no SQLite.
+10. `Program.cs` exibe resumo minimo da execucao.
 
 ## Coleta GLPI
 

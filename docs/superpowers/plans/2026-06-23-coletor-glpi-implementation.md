@@ -4,7 +4,7 @@
 
 **Goal:** Construir a primeira entrega do Agente de Pre-Analise GLPI: coleta somente leitura de lista + detalhes de chamados GLPI via Playwright .NET, com nucleo testavel e historico em SQLite.
 
-**Architecture:** A solucao separa entrada CLI, regras puras, automacao web e persistencia. Playwright fica isolado em `AgenteSuporteGlpi.ColetaGlpi`; regras e deteccao de mudanca ficam em `AgenteSuporteGlpi.Nucleo`; SQLite fica em `AgenteSuporteGlpi.Persistencia`.
+**Architecture:** A solucao usa uma solution `.slnx`, um projeto console e um projeto de testes. A separacao entre entrada CLI, regras puras, automacao web e persistencia fica em pastas e namespaces dentro de `src/AgenteSuporteGlpi`, evitando multi-projeto no MVP.
 
 **Tech Stack:** .NET 10, C# 14, Playwright .NET, Microsoft.Data.Sqlite, Microsoft.Extensions.Hosting, Microsoft.Extensions.Configuration.UserSecrets, xUnit, FluentAssertions.
 
@@ -14,29 +14,27 @@
 
 - Create: `AgenteSuporteGlpi.slnx`
 - Create: `Directory.Build.props`
-- Create: `src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj`
-- Create: `src/AgenteSuporteGlpi.Console/Program.cs`
-- Create: `src/AgenteSuporteGlpi.Console/appsettings.json`
-- Create: `src/AgenteSuporteGlpi.Nucleo/AgenteSuporteGlpi.Nucleo.csproj`
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/StatusChamado.cs`
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/ChamadoColetado.cs`
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/DetalhesChamadoColetado.cs`
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/FiltroChamados.cs`
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/HashConteudoChamado.cs`
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/ResultadoMudancaChamado.cs`
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/AgenteSuporteGlpi.ColetaGlpi.csproj`
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/Configuracao/ConfiguracaoGlpi.cs`
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/Configuracao/ConfiguracaoBrowser.cs`
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/Contratos/IColetorGlpi.cs`
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/Playwright/ColetorGlpiPlaywright.cs`
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/Playwright/SeletoresGlpi.cs`
-- Create: `src/AgenteSuporteGlpi.Persistencia/AgenteSuporteGlpi.Persistencia.csproj`
-- Create: `src/AgenteSuporteGlpi.Persistencia/Banco/ConfiguracaoBanco.cs`
-- Create: `src/AgenteSuporteGlpi.Persistencia/Banco/InicializadorBanco.cs`
-- Create: `src/AgenteSuporteGlpi.Persistencia/Chamados/RepositorioChamados.cs`
-- Create: `src/AgenteSuporteGlpi.Persistencia/Chamados/IRepositorioChamados.cs`
-- Create: `src/AgenteSuporteGlpi.Persistencia/Execucoes/ExecucaoColeta.cs`
-- Create: `src/AgenteSuporteGlpi.Persistencia/Execucoes/EventoExecucao.cs`
+- Create: `src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj`
+- Create: `src/AgenteSuporteGlpi/Program.cs`
+- Create: `src/AgenteSuporteGlpi/appsettings.json`
+- Create: `src/AgenteSuporteGlpi/Chamados/StatusChamado.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/ChamadoColetado.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/DetalhesChamadoColetado.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/FiltroChamados.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/HashConteudoChamado.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/ResultadoMudancaChamado.cs`
+- Create: `src/AgenteSuporteGlpi/Configuracao/ConfiguracaoGlpi.cs`
+- Create: `src/AgenteSuporteGlpi/Configuracao/ConfiguracaoBrowser.cs`
+- Create: `src/AgenteSuporteGlpi/Contratos/IColetorGlpi.cs`
+- Create: `src/AgenteSuporteGlpi/ColetaGlpi/ColetorGlpiPlaywright.cs`
+- Create: `src/AgenteSuporteGlpi/ColetaGlpi/SeletoresGlpi.cs`
+- Create: `src/AgenteSuporteGlpi/ColetaGlpi/ParserDetalhesChamado.cs`
+- Create: `src/AgenteSuporteGlpi/Banco/ConfiguracaoBanco.cs`
+- Create: `src/AgenteSuporteGlpi/Banco/InicializadorBanco.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/RepositorioChamados.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/IRepositorioChamados.cs`
+- Create: `src/AgenteSuporteGlpi/Execucoes/ExecucaoColeta.cs`
+- Create: `src/AgenteSuporteGlpi/Execucoes/EventoExecucao.cs`
 - Create: `tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj`
 - Create: `tests/AgenteSuporteGlpi.Testes/Nucleo/FiltroChamadosTestes.cs`
 - Create: `tests/AgenteSuporteGlpi.Testes/Nucleo/HashConteudoChamadoTestes.cs`
@@ -58,10 +56,7 @@
 **Files:**
 - Create: `AgenteSuporteGlpi.slnx`
 - Create: `Directory.Build.props`
-- Create: `src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj`
-- Create: `src/AgenteSuporteGlpi.Nucleo/AgenteSuporteGlpi.Nucleo.csproj`
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/AgenteSuporteGlpi.ColetaGlpi.csproj`
-- Create: `src/AgenteSuporteGlpi.Persistencia/AgenteSuporteGlpi.Persistencia.csproj`
+- Create: `src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj`
 - Create: `tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj`
 
 - [ ] **Step 1: Criar solution e projetos**
@@ -70,46 +65,33 @@ Run:
 
 ```powershell
 dotnet new sln -n AgenteSuporteGlpi --format slnx
-dotnet new console -n AgenteSuporteGlpi.Console -o src/AgenteSuporteGlpi.Console --framework net10.0
-dotnet new classlib -n AgenteSuporteGlpi.Nucleo -o src/AgenteSuporteGlpi.Nucleo --framework net10.0
-dotnet new classlib -n AgenteSuporteGlpi.ColetaGlpi -o src/AgenteSuporteGlpi.ColetaGlpi --framework net10.0
-dotnet new classlib -n AgenteSuporteGlpi.Persistencia -o src/AgenteSuporteGlpi.Persistencia --framework net10.0
+dotnet new console -n AgenteSuporteGlpi -o src/AgenteSuporteGlpi --framework net10.0
 dotnet new xunit -n AgenteSuporteGlpi.Testes -o tests/AgenteSuporteGlpi.Testes --framework net10.0
-dotnet sln AgenteSuporteGlpi.slnx add src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj
-dotnet sln AgenteSuporteGlpi.slnx add src/AgenteSuporteGlpi.Nucleo/AgenteSuporteGlpi.Nucleo.csproj
-dotnet sln AgenteSuporteGlpi.slnx add src/AgenteSuporteGlpi.ColetaGlpi/AgenteSuporteGlpi.ColetaGlpi.csproj
-dotnet sln AgenteSuporteGlpi.slnx add src/AgenteSuporteGlpi.Persistencia/AgenteSuporteGlpi.Persistencia.csproj
+dotnet sln AgenteSuporteGlpi.slnx add src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj
 dotnet sln AgenteSuporteGlpi.slnx add tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj
 ```
 
 Expected: projetos criados e adicionados na solution.
 
-- [ ] **Step 2: Adicionar referencias entre projetos**
+- [ ] **Step 2: Adicionar referencia do projeto de testes para o app**
 
 Run:
 
 ```powershell
-dotnet add src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj reference src/AgenteSuporteGlpi.Nucleo/AgenteSuporteGlpi.Nucleo.csproj
-dotnet add src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj reference src/AgenteSuporteGlpi.ColetaGlpi/AgenteSuporteGlpi.ColetaGlpi.csproj
-dotnet add src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj reference src/AgenteSuporteGlpi.Persistencia/AgenteSuporteGlpi.Persistencia.csproj
-dotnet add src/AgenteSuporteGlpi.ColetaGlpi/AgenteSuporteGlpi.ColetaGlpi.csproj reference src/AgenteSuporteGlpi.Nucleo/AgenteSuporteGlpi.Nucleo.csproj
-dotnet add src/AgenteSuporteGlpi.Persistencia/AgenteSuporteGlpi.Persistencia.csproj reference src/AgenteSuporteGlpi.Nucleo/AgenteSuporteGlpi.Nucleo.csproj
-dotnet add tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj reference src/AgenteSuporteGlpi.Nucleo/AgenteSuporteGlpi.Nucleo.csproj
-dotnet add tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj reference src/AgenteSuporteGlpi.Persistencia/AgenteSuporteGlpi.Persistencia.csproj
-dotnet add tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj reference src/AgenteSuporteGlpi.ColetaGlpi/AgenteSuporteGlpi.ColetaGlpi.csproj
+dotnet add tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj reference src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj
 ```
 
-Expected: referencias registradas nos `.csproj`.
+Expected: referencia registrada no `.csproj` de testes.
 
 - [ ] **Step 3: Adicionar pacotes NuGet**
 
 Run:
 
 ```powershell
-dotnet add src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj package Microsoft.Extensions.Hosting
-dotnet add src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj package Microsoft.Extensions.Configuration.UserSecrets
-dotnet add src/AgenteSuporteGlpi.ColetaGlpi/AgenteSuporteGlpi.ColetaGlpi.csproj package Microsoft.Playwright
-dotnet add src/AgenteSuporteGlpi.Persistencia/AgenteSuporteGlpi.Persistencia.csproj package Microsoft.Data.Sqlite
+dotnet add src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj package Microsoft.Extensions.Hosting
+dotnet add src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj package Microsoft.Extensions.Configuration.UserSecrets
+dotnet add src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj package Microsoft.Playwright
+dotnet add src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj package Microsoft.Data.Sqlite
 dotnet add tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj package FluentAssertions
 ```
 
@@ -136,9 +118,6 @@ Create `Directory.Build.props`:
 Delete files if created by template:
 
 ```text
-src/AgenteSuporteGlpi.Nucleo/Class1.cs
-src/AgenteSuporteGlpi.ColetaGlpi/Class1.cs
-src/AgenteSuporteGlpi.Persistencia/Class1.cs
 tests/AgenteSuporteGlpi.Testes/UnitTest1.cs
 ```
 
@@ -164,10 +143,10 @@ git commit -m "chore: criar estrutura inicial da solucao"
 ### Task 2: Modelos E Filtros Do Nucleo
 
 **Files:**
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/StatusChamado.cs`
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/ChamadoColetado.cs`
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/DetalhesChamadoColetado.cs`
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/FiltroChamados.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/StatusChamado.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/ChamadoColetado.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/DetalhesChamadoColetado.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/FiltroChamados.cs`
 - Test: `tests/AgenteSuporteGlpi.Testes/Nucleo/FiltroChamadosTestes.cs`
 
 - [ ] **Step 1: Escrever testes de filtro**
@@ -175,7 +154,7 @@ git commit -m "chore: criar estrutura inicial da solucao"
 Create `tests/AgenteSuporteGlpi.Testes/Nucleo/FiltroChamadosTestes.cs`:
 
 ```csharp
-using AgenteSuporteGlpi.Nucleo.Chamados;
+using AgenteSuporteGlpi.Chamados;
 using FluentAssertions;
 
 namespace AgenteSuporteGlpi.Testes.Nucleo;
@@ -235,10 +214,10 @@ Expected: FAIL por tipos `StatusChamado`, `ChamadoColetado` ou `FiltroChamados` 
 
 - [ ] **Step 3: Implementar modelos e filtro**
 
-Create `src/AgenteSuporteGlpi.Nucleo/Chamados/StatusChamado.cs`:
+Create `src/AgenteSuporteGlpi/Chamados/StatusChamado.cs`:
 
 ```csharp
-namespace AgenteSuporteGlpi.Nucleo.Chamados;
+namespace AgenteSuporteGlpi.Chamados;
 
 public enum StatusChamado
 {
@@ -251,10 +230,10 @@ public enum StatusChamado
 }
 ```
 
-Create `src/AgenteSuporteGlpi.Nucleo/Chamados/ChamadoColetado.cs`:
+Create `src/AgenteSuporteGlpi/Chamados/ChamadoColetado.cs`:
 
 ```csharp
-namespace AgenteSuporteGlpi.Nucleo.Chamados;
+namespace AgenteSuporteGlpi.Chamados;
 
 public sealed record ChamadoColetado(
     int Numero,
@@ -266,10 +245,10 @@ public sealed record ChamadoColetado(
     Uri Link);
 ```
 
-Create `src/AgenteSuporteGlpi.Nucleo/Chamados/DetalhesChamadoColetado.cs`:
+Create `src/AgenteSuporteGlpi/Chamados/DetalhesChamadoColetado.cs`:
 
 ```csharp
-namespace AgenteSuporteGlpi.Nucleo.Chamados;
+namespace AgenteSuporteGlpi.Chamados;
 
 public sealed record DetalhesChamadoColetado(
     int Numero,
@@ -285,10 +264,10 @@ public sealed record DetalhesChamadoColetado(
     Uri Link);
 ```
 
-Create `src/AgenteSuporteGlpi.Nucleo/Chamados/FiltroChamados.cs`:
+Create `src/AgenteSuporteGlpi/Chamados/FiltroChamados.cs`:
 
 ```csharp
-namespace AgenteSuporteGlpi.Nucleo.Chamados;
+namespace AgenteSuporteGlpi.Chamados;
 
 public static class FiltroChamados
 {
@@ -337,15 +316,15 @@ Expected: PASS.
 Run:
 
 ```powershell
-git add src/AgenteSuporteGlpi.Nucleo tests/AgenteSuporteGlpi.Testes/Nucleo/FiltroChamadosTestes.cs
+git add src/AgenteSuporteGlpi tests/AgenteSuporteGlpi.Testes/Nucleo/FiltroChamadosTestes.cs
 git commit -m "feat: adicionar filtro de chamados elegiveis"
 ```
 
 ### Task 3: Hash E Deteccao De Mudanca
 
 **Files:**
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/HashConteudoChamado.cs`
-- Create: `src/AgenteSuporteGlpi.Nucleo/Chamados/ResultadoMudancaChamado.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/HashConteudoChamado.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/ResultadoMudancaChamado.cs`
 - Test: `tests/AgenteSuporteGlpi.Testes/Nucleo/HashConteudoChamadoTestes.cs`
 - Test: `tests/AgenteSuporteGlpi.Testes/Nucleo/ResultadoMudancaChamadoTestes.cs`
 
@@ -354,7 +333,7 @@ git commit -m "feat: adicionar filtro de chamados elegiveis"
 Create `tests/AgenteSuporteGlpi.Testes/Nucleo/HashConteudoChamadoTestes.cs`:
 
 ```csharp
-using AgenteSuporteGlpi.Nucleo.Chamados;
+using AgenteSuporteGlpi.Chamados;
 using FluentAssertions;
 
 namespace AgenteSuporteGlpi.Testes.Nucleo;
@@ -386,7 +365,7 @@ public sealed class HashConteudoChamadoTestes
 Create `tests/AgenteSuporteGlpi.Testes/Nucleo/ResultadoMudancaChamadoTestes.cs`:
 
 ```csharp
-using AgenteSuporteGlpi.Nucleo.Chamados;
+using AgenteSuporteGlpi.Chamados;
 using FluentAssertions;
 
 namespace AgenteSuporteGlpi.Testes.Nucleo;
@@ -434,14 +413,14 @@ Expected: FAIL por tipos inexistentes.
 
 - [ ] **Step 4: Implementar hash e resultado de mudanca**
 
-Create `src/AgenteSuporteGlpi.Nucleo/Chamados/HashConteudoChamado.cs`:
+Create `src/AgenteSuporteGlpi/Chamados/HashConteudoChamado.cs`:
 
 ```csharp
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace AgenteSuporteGlpi.Nucleo.Chamados;
+namespace AgenteSuporteGlpi.Chamados;
 
 public static partial class HashConteudoChamado
 {
@@ -460,10 +439,10 @@ public static partial class HashConteudoChamado
 }
 ```
 
-Create `src/AgenteSuporteGlpi.Nucleo/Chamados/ResultadoMudancaChamado.cs`:
+Create `src/AgenteSuporteGlpi/Chamados/ResultadoMudancaChamado.cs`:
 
 ```csharp
-namespace AgenteSuporteGlpi.Nucleo.Chamados;
+namespace AgenteSuporteGlpi.Chamados;
 
 public sealed record ResultadoMudancaChamado(bool EhNovo, bool FoiAlterado)
 {
@@ -500,19 +479,19 @@ Expected: PASS.
 Run:
 
 ```powershell
-git add src/AgenteSuporteGlpi.Nucleo tests/AgenteSuporteGlpi.Testes/Nucleo
+git add src/AgenteSuporteGlpi tests/AgenteSuporteGlpi.Testes/Nucleo
 git commit -m "feat: detectar mudancas em chamados"
 ```
 
 ### Task 4: Persistencia SQLite
 
 **Files:**
-- Create: `src/AgenteSuporteGlpi.Persistencia/Banco/ConfiguracaoBanco.cs`
-- Create: `src/AgenteSuporteGlpi.Persistencia/Banco/InicializadorBanco.cs`
-- Create: `src/AgenteSuporteGlpi.Persistencia/Chamados/IRepositorioChamados.cs`
-- Create: `src/AgenteSuporteGlpi.Persistencia/Chamados/RepositorioChamados.cs`
-- Create: `src/AgenteSuporteGlpi.Persistencia/Execucoes/ExecucaoColeta.cs`
-- Create: `src/AgenteSuporteGlpi.Persistencia/Execucoes/EventoExecucao.cs`
+- Create: `src/AgenteSuporteGlpi/Banco/ConfiguracaoBanco.cs`
+- Create: `src/AgenteSuporteGlpi/Banco/InicializadorBanco.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/IRepositorioChamados.cs`
+- Create: `src/AgenteSuporteGlpi/Chamados/RepositorioChamados.cs`
+- Create: `src/AgenteSuporteGlpi/Execucoes/ExecucaoColeta.cs`
+- Create: `src/AgenteSuporteGlpi/Execucoes/EventoExecucao.cs`
 - Test: `tests/AgenteSuporteGlpi.Testes/Persistencia/RepositorioChamadosTestes.cs`
 
 - [ ] **Step 1: Escrever teste de persistencia**
@@ -520,9 +499,8 @@ git commit -m "feat: detectar mudancas em chamados"
 Create `tests/AgenteSuporteGlpi.Testes/Persistencia/RepositorioChamadosTestes.cs`:
 
 ```csharp
-using AgenteSuporteGlpi.Nucleo.Chamados;
-using AgenteSuporteGlpi.Persistencia.Banco;
-using AgenteSuporteGlpi.Persistencia.Chamados;
+using AgenteSuporteGlpi.Chamados;
+using AgenteSuporteGlpi.Banco;
 using FluentAssertions;
 
 namespace AgenteSuporteGlpi.Testes.Persistencia;
@@ -598,10 +576,10 @@ Expected: FAIL por tipos de persistencia inexistentes.
 
 - [ ] **Step 3: Implementar inicializador e repositorio**
 
-Create `src/AgenteSuporteGlpi.Persistencia/Banco/ConfiguracaoBanco.cs`:
+Create `src/AgenteSuporteGlpi/Banco/ConfiguracaoBanco.cs`:
 
 ```csharp
-namespace AgenteSuporteGlpi.Persistencia.Banco;
+namespace AgenteSuporteGlpi.Banco;
 
 public sealed class ConfiguracaoBanco
 {
@@ -609,12 +587,12 @@ public sealed class ConfiguracaoBanco
 }
 ```
 
-Create `src/AgenteSuporteGlpi.Persistencia/Banco/InicializadorBanco.cs`:
+Create `src/AgenteSuporteGlpi/Banco/InicializadorBanco.cs`:
 
 ```csharp
 using Microsoft.Data.Sqlite;
 
-namespace AgenteSuporteGlpi.Persistencia.Banco;
+namespace AgenteSuporteGlpi.Banco;
 
 public sealed class InicializadorBanco(string connectionString)
 {
@@ -676,12 +654,12 @@ public sealed class InicializadorBanco(string connectionString)
 }
 ```
 
-Create `src/AgenteSuporteGlpi.Persistencia/Chamados/IRepositorioChamados.cs`:
+Create `src/AgenteSuporteGlpi/Chamados/IRepositorioChamados.cs`:
 
 ```csharp
-using AgenteSuporteGlpi.Nucleo.Chamados;
+using AgenteSuporteGlpi.Chamados;
 
-namespace AgenteSuporteGlpi.Persistencia.Chamados;
+namespace AgenteSuporteGlpi.Chamados;
 
 public interface IRepositorioChamados
 {
@@ -690,13 +668,13 @@ public interface IRepositorioChamados
 }
 ```
 
-Create `src/AgenteSuporteGlpi.Persistencia/Chamados/RepositorioChamados.cs`:
+Create `src/AgenteSuporteGlpi/Chamados/RepositorioChamados.cs`:
 
 ```csharp
-using AgenteSuporteGlpi.Nucleo.Chamados;
+using AgenteSuporteGlpi.Chamados;
 using Microsoft.Data.Sqlite;
 
-namespace AgenteSuporteGlpi.Persistencia.Chamados;
+namespace AgenteSuporteGlpi.Chamados;
 
 public sealed class RepositorioChamados(string connectionString) : IRepositorioChamados
 {
@@ -776,10 +754,10 @@ public sealed class RepositorioChamados(string connectionString) : IRepositorioC
 }
 ```
 
-Create `src/AgenteSuporteGlpi.Persistencia/Execucoes/ExecucaoColeta.cs`:
+Create `src/AgenteSuporteGlpi/Execucoes/ExecucaoColeta.cs`:
 
 ```csharp
-namespace AgenteSuporteGlpi.Persistencia.Execucoes;
+namespace AgenteSuporteGlpi.Execucoes;
 
 public sealed record ExecucaoColeta(
     long Id,
@@ -793,10 +771,10 @@ public sealed record ExecucaoColeta(
     string? MensagemErro);
 ```
 
-Create `src/AgenteSuporteGlpi.Persistencia/Execucoes/EventoExecucao.cs`:
+Create `src/AgenteSuporteGlpi/Execucoes/EventoExecucao.cs`:
 
 ```csharp
-namespace AgenteSuporteGlpi.Persistencia.Execucoes;
+namespace AgenteSuporteGlpi.Execucoes;
 
 public sealed record EventoExecucao(
     long Id,
@@ -823,16 +801,16 @@ Expected: PASS.
 Run:
 
 ```powershell
-git add src/AgenteSuporteGlpi.Persistencia tests/AgenteSuporteGlpi.Testes/Persistencia
+git add src/AgenteSuporteGlpi tests/AgenteSuporteGlpi.Testes/Persistencia
 git commit -m "feat: persistir historico de chamados em sqlite"
 ```
 
 ### Task 5: Contrato Do Coletor E Parsing Sem Browser
 
 **Files:**
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/Contratos/IColetorGlpi.cs`
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/Playwright/SeletoresGlpi.cs`
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/Playwright/ParserDetalhesChamado.cs`
+- Create: `src/AgenteSuporteGlpi/Contratos/IColetorGlpi.cs`
+- Create: `src/AgenteSuporteGlpi/ColetaGlpi/SeletoresGlpi.cs`
+- Create: `src/AgenteSuporteGlpi/ColetaGlpi/ParserDetalhesChamado.cs`
 - Create: `tests/AgenteSuporteGlpi.Testes/Fixtures/chamado-detalhe.html`
 - Test: `tests/AgenteSuporteGlpi.Testes/ColetaGlpi/ParsingHtmlChamadoTestes.cs`
 
@@ -862,8 +840,8 @@ Create `tests/AgenteSuporteGlpi.Testes/Fixtures/chamado-detalhe.html`:
 Create `tests/AgenteSuporteGlpi.Testes/ColetaGlpi/ParsingHtmlChamadoTestes.cs`:
 
 ```csharp
-using AgenteSuporteGlpi.ColetaGlpi.Playwright;
-using AgenteSuporteGlpi.Nucleo.Chamados;
+using AgenteSuporteGlpi.ColetaGlpi;
+using AgenteSuporteGlpi.Chamados;
 using FluentAssertions;
 
 namespace AgenteSuporteGlpi.Testes.ColetaGlpi;
@@ -900,12 +878,12 @@ Expected: FAIL por `ParserDetalhesChamado` inexistente.
 
 - [ ] **Step 4: Implementar contrato e parser**
 
-Create `src/AgenteSuporteGlpi.ColetaGlpi/Contratos/IColetorGlpi.cs`:
+Create `src/AgenteSuporteGlpi/Contratos/IColetorGlpi.cs`:
 
 ```csharp
-using AgenteSuporteGlpi.Nucleo.Chamados;
+using AgenteSuporteGlpi.Chamados;
 
-namespace AgenteSuporteGlpi.ColetaGlpi.Contratos;
+namespace AgenteSuporteGlpi.Contratos;
 
 public interface IColetorGlpi
 {
@@ -914,10 +892,10 @@ public interface IColetorGlpi
 }
 ```
 
-Create `src/AgenteSuporteGlpi.ColetaGlpi/Playwright/SeletoresGlpi.cs`:
+Create `src/AgenteSuporteGlpi/ColetaGlpi/SeletoresGlpi.cs`:
 
 ```csharp
-namespace AgenteSuporteGlpi.ColetaGlpi.Playwright;
+namespace AgenteSuporteGlpi.ColetaGlpi;
 
 public sealed class SeletoresGlpi
 {
@@ -929,13 +907,13 @@ public sealed class SeletoresGlpi
 }
 ```
 
-Create `src/AgenteSuporteGlpi.ColetaGlpi/Playwright/ParserDetalhesChamado.cs`:
+Create `src/AgenteSuporteGlpi/ColetaGlpi/ParserDetalhesChamado.cs`:
 
 ```csharp
 using System.Text.RegularExpressions;
-using AgenteSuporteGlpi.Nucleo.Chamados;
+using AgenteSuporteGlpi.Chamados;
 
-namespace AgenteSuporteGlpi.ColetaGlpi.Playwright;
+namespace AgenteSuporteGlpi.ColetaGlpi;
 
 public static partial class ParserDetalhesChamado
 {
@@ -1030,23 +1008,23 @@ Expected: PASS.
 Run:
 
 ```powershell
-git add src/AgenteSuporteGlpi.ColetaGlpi tests/AgenteSuporteGlpi.Testes
+git add src/AgenteSuporteGlpi tests/AgenteSuporteGlpi.Testes
 git commit -m "feat: adicionar contrato e parsing de chamados glpi"
 ```
 
 ### Task 6: Automacao Playwright Somente Leitura
 
 **Files:**
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/Configuracao/ConfiguracaoGlpi.cs`
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/Configuracao/ConfiguracaoBrowser.cs`
-- Create: `src/AgenteSuporteGlpi.ColetaGlpi/Playwright/ColetorGlpiPlaywright.cs`
+- Create: `src/AgenteSuporteGlpi/Configuracao/ConfiguracaoGlpi.cs`
+- Create: `src/AgenteSuporteGlpi/Configuracao/ConfiguracaoBrowser.cs`
+- Create: `src/AgenteSuporteGlpi/ColetaGlpi/ColetorGlpiPlaywright.cs`
 
 - [ ] **Step 1: Criar configuracoes**
 
-Create `src/AgenteSuporteGlpi.ColetaGlpi/Configuracao/ConfiguracaoGlpi.cs`:
+Create `src/AgenteSuporteGlpi/Configuracao/ConfiguracaoGlpi.cs`:
 
 ```csharp
-namespace AgenteSuporteGlpi.ColetaGlpi.Configuracao;
+namespace AgenteSuporteGlpi.Configuracao;
 
 public sealed class ConfiguracaoGlpi
 {
@@ -1058,10 +1036,10 @@ public sealed class ConfiguracaoGlpi
 }
 ```
 
-Create `src/AgenteSuporteGlpi.ColetaGlpi/Configuracao/ConfiguracaoBrowser.cs`:
+Create `src/AgenteSuporteGlpi/Configuracao/ConfiguracaoBrowser.cs`:
 
 ```csharp
-namespace AgenteSuporteGlpi.ColetaGlpi.Configuracao;
+namespace AgenteSuporteGlpi.Configuracao;
 
 public sealed class ConfiguracaoBrowser
 {
@@ -1072,15 +1050,15 @@ public sealed class ConfiguracaoBrowser
 
 - [ ] **Step 2: Implementar esqueleto Playwright com guardrails**
 
-Create `src/AgenteSuporteGlpi.ColetaGlpi/Playwright/ColetorGlpiPlaywright.cs`:
+Create `src/AgenteSuporteGlpi/ColetaGlpi/ColetorGlpiPlaywright.cs`:
 
 ```csharp
-using AgenteSuporteGlpi.ColetaGlpi.Configuracao;
-using AgenteSuporteGlpi.ColetaGlpi.Contratos;
-using AgenteSuporteGlpi.Nucleo.Chamados;
+using AgenteSuporteGlpi.Configuracao;
+using AgenteSuporteGlpi.Contratos;
+using AgenteSuporteGlpi.Chamados;
 using Microsoft.Playwright;
 
-namespace AgenteSuporteGlpi.ColetaGlpi.Playwright;
+namespace AgenteSuporteGlpi.ColetaGlpi;
 
 public sealed class ColetorGlpiPlaywright(
     ConfiguracaoGlpi configuracaoGlpi,
@@ -1206,19 +1184,19 @@ Expected: `Build succeeded`.
 Run:
 
 ```powershell
-git add src/AgenteSuporteGlpi.ColetaGlpi
+git add src/AgenteSuporteGlpi
 git commit -m "feat: adicionar coletor glpi com playwright"
 ```
 
 ### Task 7: Console, Configuracao E User Secrets
 
 **Files:**
-- Create: `src/AgenteSuporteGlpi.Console/appsettings.json`
-- Modify: `src/AgenteSuporteGlpi.Console/Program.cs`
+- Create: `src/AgenteSuporteGlpi/appsettings.json`
+- Modify: `src/AgenteSuporteGlpi/Program.cs`
 
 - [ ] **Step 1: Criar appsettings sem segredos**
 
-Create `src/AgenteSuporteGlpi.Console/appsettings.json`:
+Create `src/AgenteSuporteGlpi/appsettings.json`:
 
 ```json
 {
@@ -1239,15 +1217,14 @@ Create `src/AgenteSuporteGlpi.Console/appsettings.json`:
 
 - [ ] **Step 2: Implementar Program.cs**
 
-Modify `src/AgenteSuporteGlpi.Console/Program.cs`:
+Modify `src/AgenteSuporteGlpi/Program.cs`:
 
 ```csharp
-using AgenteSuporteGlpi.ColetaGlpi.Configuracao;
-using AgenteSuporteGlpi.ColetaGlpi.Contratos;
-using AgenteSuporteGlpi.ColetaGlpi.Playwright;
-using AgenteSuporteGlpi.Nucleo.Chamados;
-using AgenteSuporteGlpi.Persistencia.Banco;
-using AgenteSuporteGlpi.Persistencia.Chamados;
+using AgenteSuporteGlpi.Configuracao;
+using AgenteSuporteGlpi.Contratos;
+using AgenteSuporteGlpi.ColetaGlpi;
+using AgenteSuporteGlpi.Chamados;
+using AgenteSuporteGlpi.Banco;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -1311,9 +1288,9 @@ Console.WriteLine($"Chamados ignorados: {ignorados}");
 Run:
 
 ```powershell
-dotnet user-secrets init --project src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj
-dotnet user-secrets set "Glpi:UsuarioLogin" "usuario.local" --project src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj
-dotnet user-secrets set "Glpi:SenhaLogin" "senha-local" --project src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj
+dotnet user-secrets init --project src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj
+dotnet user-secrets set "Glpi:UsuarioLogin" "usuario.local" --project src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj
+dotnet user-secrets set "Glpi:SenhaLogin" "senha-local" --project src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj
 ```
 
 Expected: secrets gravados fora do repositorio. Antes de usar GLPI real, substituir valores de exemplo pelos dados reais localmente.
@@ -1333,7 +1310,7 @@ Expected: `Build succeeded`.
 Run:
 
 ```powershell
-git add src/AgenteSuporteGlpi.Console
+git add src/AgenteSuporteGlpi
 git commit -m "feat: configurar execucao do coletor glpi"
 ```
 
@@ -1355,7 +1332,7 @@ Executar coleta somente leitura de chamados GLPI atribuídos ao responsável con
 
 ## Configuração Não Sensível
 
-Arquivo: `src/AgenteSuporteGlpi.Console/appsettings.json`
+Arquivo: `src/AgenteSuporteGlpi/appsettings.json`
 
 - `Glpi:UrlBase`
 - `Glpi:Responsavel`
@@ -1369,15 +1346,15 @@ Arquivo: `src/AgenteSuporteGlpi.Console/appsettings.json`
 Use User Secrets no projeto Console:
 
 ```powershell
-dotnet user-secrets init --project src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj
-dotnet user-secrets set "Glpi:UsuarioLogin" "seu-usuario" --project src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj
-dotnet user-secrets set "Glpi:SenhaLogin" "sua-senha" --project src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj
+dotnet user-secrets init --project src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj
+dotnet user-secrets set "Glpi:UsuarioLogin" "seu-usuario" --project src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj
+dotnet user-secrets set "Glpi:SenhaLogin" "sua-senha" --project src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj
 ```
 
 ## Execução
 
 ```powershell
-dotnet run --project src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj
+dotnet run --project src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj
 ```
 
 ## Segurança
