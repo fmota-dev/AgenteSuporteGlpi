@@ -1,0 +1,80 @@
+using Microsoft.Data.Sqlite;
+
+namespace AgenteSuporteGlpi.Chamados;
+
+public sealed class RepositorioChamados(string connectionString) : IRepositorioChamados
+{
+    public async Task<string?> ObterUltimoHashAsync(int numeroChamado, CancellationToken cancellationToken)
+    {
+        await using var conexao = new SqliteConnection(connectionString);
+        await conexao.OpenAsync(cancellationToken);
+
+        var comando = conexao.CreateCommand();
+        comando.CommandText = """
+            SELECT HashConteudo
+            FROM ColetasChamado
+            WHERE NumeroChamado = $numeroChamado
+            ORDER BY Id DESC
+            LIMIT 1
+            """;
+        comando.Parameters.AddWithValue("$numeroChamado", numeroChamado);
+
+        var resultado = await comando.ExecuteScalarAsync(cancellationToken);
+        return resultado as string;
+    }
+
+    public async Task SalvarChamadoAsync(DetalhesChamadoColetado chamado, string hashConteudo, CancellationToken cancellationToken)
+    {
+        await using var conexao = new SqliteConnection(connectionString);
+        await conexao.OpenAsync(cancellationToken);
+        await using var transacao = await conexao.BeginTransactionAsync(cancellationToken);
+
+        var upsert = conexao.CreateCommand();
+        upsert.Transaction = (SqliteTransaction)transacao;
+        upsert.CommandText = """
+            INSERT INTO Chamados (
+                Numero, TituloAtual, StatusAtual, PrioridadeAtual, Responsavel, Solicitante,
+                Categoria, DataAbertura, DataUltimaAtualizacao, Link)
+            VALUES (
+                $numero, $titulo, $status, $prioridade, $responsavel, $solicitante,
+                $categoria, $dataAbertura, $dataUltimaAtualizacao, $link)
+            ON CONFLICT(Numero) DO UPDATE SET
+                TituloAtual = excluded.TituloAtual,
+                StatusAtual = excluded.StatusAtual,
+                PrioridadeAtual = excluded.PrioridadeAtual,
+                Responsavel = excluded.Responsavel,
+                Solicitante = excluded.Solicitante,
+                Categoria = excluded.Categoria,
+                DataAbertura = excluded.DataAbertura,
+                DataUltimaAtualizacao = excluded.DataUltimaAtualizacao,
+                Link = excluded.Link
+            """;
+
+        upsert.Parameters.AddWithValue("$numero", chamado.Numero);
+        upsert.Parameters.AddWithValue("$titulo", chamado.Titulo);
+        upsert.Parameters.AddWithValue("$status", chamado.Status.ToString());
+        upsert.Parameters.AddWithValue("$prioridade", chamado.Prioridade);
+        upsert.Parameters.AddWithValue("$responsavel", chamado.Responsavel);
+        upsert.Parameters.AddWithValue("$solicitante", (object?)chamado.Solicitante ?? DBNull.Value);
+        upsert.Parameters.AddWithValue("$categoria", (object?)chamado.Categoria ?? DBNull.Value);
+        upsert.Parameters.AddWithValue("$dataAbertura", chamado.DataAbertura.ToString("O"));
+        upsert.Parameters.AddWithValue("$dataUltimaAtualizacao", chamado.DataUltimaAtualizacao.ToString("O"));
+        upsert.Parameters.AddWithValue("$link", chamado.Link.ToString());
+        await upsert.ExecuteNonQueryAsync(cancellationToken);
+
+        var inserirColeta = conexao.CreateCommand();
+        inserirColeta.Transaction = (SqliteTransaction)transacao;
+        inserirColeta.CommandText = """
+            INSERT INTO ColetasChamado (NumeroChamado, DescricaoColetada, HashConteudo, StatusColeta, DataColeta)
+            VALUES ($numeroChamado, $descricao, $hash, $statusColeta, $dataColeta)
+            """;
+        inserirColeta.Parameters.AddWithValue("$numeroChamado", chamado.Numero);
+        inserirColeta.Parameters.AddWithValue("$descricao", chamado.Descricao);
+        inserirColeta.Parameters.AddWithValue("$hash", hashConteudo);
+        inserirColeta.Parameters.AddWithValue("$statusColeta", "Coletado");
+        inserirColeta.Parameters.AddWithValue("$dataColeta", DateTimeOffset.UtcNow.ToString("O"));
+        await inserirColeta.ExecuteNonQueryAsync(cancellationToken);
+
+        await transacao.CommitAsync(cancellationToken);
+    }
+}
