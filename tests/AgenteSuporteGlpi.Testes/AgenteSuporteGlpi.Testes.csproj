@@ -28,4 +28,8 @@
     <ProjectReference Include="..\..\src\AgenteSuporteGlpi\AgenteSuporteGlpi.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Fixtures\*.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
