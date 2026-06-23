@@ -125,7 +125,7 @@ internal sealed partial class Program : IHostedService
                 var configuracaoGlpi = config.GetSection("Glpi").Get<ConfiguracaoGlpi>()
                     ?? throw new InvalidOperationException("Secao 'Glpi' nao encontrada em appsettings.json.");
 
-                ValidarCredenciais(configuracaoGlpi);
+                ValidarConfiguracao(configuracaoGlpi);
 
                 var configuracaoBrowser = config.GetSection("Browser").Get<ConfiguracaoBrowser>()
                     ?? new ConfiguracaoBrowser();
@@ -150,8 +150,14 @@ internal sealed partial class Program : IHostedService
         await host.RunAsync();
     }
 
-    private static void ValidarCredenciais(ConfiguracaoGlpi config)
+    private static void ValidarConfiguracao(ConfiguracaoGlpi config)
     {
+        if (string.IsNullOrWhiteSpace(config.Responsavel))
+        {
+            throw new InvalidOperationException(
+                "'Responsavel' obrigatorio. Configure 'Glpi:Responsavel' em appsettings.json.");
+        }
+
         if (string.IsNullOrWhiteSpace(config.UsuarioLogin))
         {
             throw new InvalidOperationException(
