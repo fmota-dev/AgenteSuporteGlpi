@@ -28,6 +28,9 @@ output/playwright/
 # Superpowers visual companion
 .superpowers/
 
+# Worktrees locais
+.worktrees/
+
 # Banco local do MVP
 *.db
 *.db-shm
