@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AgenteSuporteGlpi/AgenteSuporteGlpi.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj" />
+  </Folder>
+</Solution>
