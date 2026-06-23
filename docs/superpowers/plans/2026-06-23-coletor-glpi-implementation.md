@@ -12,7 +12,7 @@
 
 ## Estrutura De Arquivos
 
-- Create: `AgenteSuporteGlpi.sln`
+- Create: `AgenteSuporteGlpi.slnx`
 - Create: `Directory.Build.props`
 - Create: `src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj`
 - Create: `src/AgenteSuporteGlpi.Console/Program.cs`
@@ -56,7 +56,7 @@
 ### Task 1: Estrutura Inicial Da Solucao
 
 **Files:**
-- Create: `AgenteSuporteGlpi.sln`
+- Create: `AgenteSuporteGlpi.slnx`
 - Create: `Directory.Build.props`
 - Create: `src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj`
 - Create: `src/AgenteSuporteGlpi.Nucleo/AgenteSuporteGlpi.Nucleo.csproj`
@@ -69,17 +69,17 @@
 Run:
 
 ```powershell
-dotnet new sln -n AgenteSuporteGlpi
+dotnet new sln -n AgenteSuporteGlpi --format slnx
 dotnet new console -n AgenteSuporteGlpi.Console -o src/AgenteSuporteGlpi.Console --framework net10.0
 dotnet new classlib -n AgenteSuporteGlpi.Nucleo -o src/AgenteSuporteGlpi.Nucleo --framework net10.0
 dotnet new classlib -n AgenteSuporteGlpi.ColetaGlpi -o src/AgenteSuporteGlpi.ColetaGlpi --framework net10.0
 dotnet new classlib -n AgenteSuporteGlpi.Persistencia -o src/AgenteSuporteGlpi.Persistencia --framework net10.0
 dotnet new xunit -n AgenteSuporteGlpi.Testes -o tests/AgenteSuporteGlpi.Testes --framework net10.0
-dotnet sln AgenteSuporteGlpi.sln add src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj
-dotnet sln AgenteSuporteGlpi.sln add src/AgenteSuporteGlpi.Nucleo/AgenteSuporteGlpi.Nucleo.csproj
-dotnet sln AgenteSuporteGlpi.sln add src/AgenteSuporteGlpi.ColetaGlpi/AgenteSuporteGlpi.ColetaGlpi.csproj
-dotnet sln AgenteSuporteGlpi.sln add src/AgenteSuporteGlpi.Persistencia/AgenteSuporteGlpi.Persistencia.csproj
-dotnet sln AgenteSuporteGlpi.sln add tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj
+dotnet sln AgenteSuporteGlpi.slnx add src/AgenteSuporteGlpi.Console/AgenteSuporteGlpi.Console.csproj
+dotnet sln AgenteSuporteGlpi.slnx add src/AgenteSuporteGlpi.Nucleo/AgenteSuporteGlpi.Nucleo.csproj
+dotnet sln AgenteSuporteGlpi.slnx add src/AgenteSuporteGlpi.ColetaGlpi/AgenteSuporteGlpi.ColetaGlpi.csproj
+dotnet sln AgenteSuporteGlpi.slnx add src/AgenteSuporteGlpi.Persistencia/AgenteSuporteGlpi.Persistencia.csproj
+dotnet sln AgenteSuporteGlpi.slnx add tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj
 ```
 
 Expected: projetos criados e adicionados na solution.
@@ -147,7 +147,7 @@ tests/AgenteSuporteGlpi.Testes/UnitTest1.cs
 Run:
 
 ```powershell
-dotnet build AgenteSuporteGlpi.sln
+dotnet build AgenteSuporteGlpi.slnx
 ```
 
 Expected: `Build succeeded`.
@@ -157,7 +157,7 @@ Expected: `Build succeeded`.
 Run:
 
 ```powershell
-git add AgenteSuporteGlpi.sln Directory.Build.props src tests
+git add AgenteSuporteGlpi.slnx Directory.Build.props src tests
 git commit -m "chore: criar estrutura inicial da solucao"
 ```
 
@@ -1196,7 +1196,7 @@ public sealed class ColetorGlpiPlaywright(
 Run:
 
 ```powershell
-dotnet build AgenteSuporteGlpi.sln
+dotnet build AgenteSuporteGlpi.slnx
 ```
 
 Expected: `Build succeeded`.
@@ -1323,7 +1323,7 @@ Expected: secrets gravados fora do repositorio. Antes de usar GLPI real, substit
 Run:
 
 ```powershell
-dotnet build AgenteSuporteGlpi.sln
+dotnet build AgenteSuporteGlpi.slnx
 ```
 
 Expected: `Build succeeded`.
@@ -1390,7 +1390,7 @@ O coletor não deve comentar, salvar, alterar status, prioridade, categoria ou r
 Run:
 
 ```powershell
-dotnet test AgenteSuporteGlpi.sln
+dotnet test AgenteSuporteGlpi.slnx
 ```
 
 Expected: todos os testes PASS.
@@ -1400,7 +1400,7 @@ Expected: todos os testes PASS.
 Run:
 
 ```powershell
-dotnet build AgenteSuporteGlpi.sln -c Release
+dotnet build AgenteSuporteGlpi.slnx -c Release
 ```
 
 Expected: `Build succeeded`.
