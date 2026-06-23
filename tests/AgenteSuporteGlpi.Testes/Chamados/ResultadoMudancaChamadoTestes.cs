@@ -31,4 +31,21 @@ public sealed class ResultadoMudancaChamadoTestes
         resultado.EhNovo.Should().BeFalse();
         resultado.FoiAlterado.Should().BeTrue();
     }
+
+    [Fact]
+    public void Deve_lancar_quando_hash_atual_for_vazio()
+    {
+        var acao = () => ResultadoMudancaChamado.Avaliar(null, "");
+
+        acao.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Deve_marcar_como_novo_quando_hash_anterior_for_vazio()
+    {
+        var resultado = ResultadoMudancaChamado.Avaliar("", "abc");
+
+        resultado.EhNovo.Should().BeTrue();
+        resultado.FoiAlterado.Should().BeTrue();
+    }
 }
