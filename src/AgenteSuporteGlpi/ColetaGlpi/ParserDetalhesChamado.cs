@@ -39,7 +39,7 @@ public static partial class ParserDetalhesChamado
         Limpar(MatchObrigatorio(html, $"<{tag}>(.*?)</{tag}>").Groups[1].Value);
 
     private static string ExtrairPorId(string html, string id) =>
-        Limpar(MatchObrigatorio(html, $"<[^>]+id=\"{id}\"[^>]*>(.*?)</[^>]+>").Groups[1].Value);
+        Limpar(MatchObrigatorio(html, $"<([a-zA-Z]+)[^>]*id=\"{id}\"[^>]*>(.*?)</\\1>").Groups[2].Value);
 
     private static string ExtrairValor(string html, string rotulo) =>
         ExtrairValorOpcional(html, rotulo) ?? throw new InvalidOperationException($"Campo obrigatorio nao encontrado: {rotulo}.");
