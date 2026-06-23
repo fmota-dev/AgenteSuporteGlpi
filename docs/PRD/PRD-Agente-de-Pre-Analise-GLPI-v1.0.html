@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PRD v1.0 — Agente de Pré-Análise GLPI</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --paper: #ffffff;
+      --text: #1f2937;
+      --muted: #64748b;
+      --border: #dbe3ef;
+      --accent: #2563eb;
+      --accent-soft: #e8f0ff;
+      --code-bg: #0f172a;
+      --code-text: #e5e7eb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      line-height: 1.65;
+    }
+
+    .page {
+      max-width: 1080px;
+      margin: 32px auto;
+      padding: 0 20px;
+    }
+
+    .document {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 42px 48px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #2563eb 100%);
+      color: #ffffff;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      margin: 0;
+      color: #dbeafe;
+      font-size: 16px;
+    }
+
+    .content {
+      padding: 36px 48px 52px;
+    }
+
+    h1 {
+      display: none;
+    }
+
+    h2 {
+      margin-top: 38px;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      color: #0f172a;
+      font-size: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      margin-top: 26px;
+      margin-bottom: 10px;
+      color: #1e3a8a;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul {
+      margin: 10px 0 18px 0;
+      padding-left: 24px;
+    }
+
+    li {
+      margin: 5px 0;
+    }
+
+    code {
+      background: var(--accent-soft);
+      color: #1e3a8a;
+      padding: 2px 5px;
+      border-radius: 5px;
+      font-size: 0.95em;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 18px;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin: 16px 0 22px;
+      border: 1px solid #1e293b;
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .meta-card {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+
+    .meta-card strong {
+      display: block;
+      font-size: 13px;
+      color: #bfdbfe;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .meta-card span {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    @media (max-width: 760px) {
+      .hero, .content {
+        padding: 28px 24px;
+      }
+
+      .hero h1 {
+        font-size: 27px;
+      }
+
+      .meta {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        margin: 0;
+        max-width: none;
+        padding: 0;
+      }
+
+      .document {
+        box-shadow: none;
+        border: none;
+        border-radius: 0;
+      }
+
+      .hero {
+        color: #000;
+        background: #fff;
+        border-bottom: 2px solid #000;
+      }
+
+      .hero p,
+      .meta-card strong,
+      .meta-card span {
+        color: #000;
+      }
+
+      .meta-card {
+        border: 1px solid #999;
+        background: #fff;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <article class="document">
+      <header class="hero">
+        <h1>PRD v1.0 — Agente de Pré-Análise GLPI</h1>
+        <p>Documento de requisitos do produto para uma solução de triagem técnica assistida por IA, com foco em chamados GLPI, sistemas legados .NET, repositórios, banco SQL Server e relatórios auditáveis.</p>
+        <section class="meta">
+          <div class="meta-card">
+            <strong>Versão</strong>
+            <span>1.0</span>
+          </div>
+          <div class="meta-card">
+            <strong>Escopo inicial</strong>
+            <span>MVP local</span>
+          </div>
+          <div class="meta-card">
+            <strong>Autonomia</strong>
+            <span>Somente leitura</span>
+          </div>
+        </section>
+      </header>
+      <section class="content">
+        <h1>PRD v1.0 — Agente de Pré-Análise GLPI</h1>
+<h2>1. Nome do projeto</h2>
+<p><strong>Agente de Pré-Análise GLPI</strong></p>
+<h2>2. Visão geral</h2>
+<p>O Agente de Pré-Análise GLPI é uma solução de apoio ao diagnóstico técnico de chamados internos atribuídos a desenvolvedores no GLPI.</p>
+<p>O sistema deverá consultar chamados novos ou atualizados, inicialmente atribuídos a um único desenvolvedor, analisar descrições, comentários e prints anexados, cruzar informações com repositórios locais/Azure DevOps, banco SQL Server via MCP existente e histórico de análises anteriores, gerando relatórios técnicos completos em HTML e enviando um e-mail consolidado com o resumo da execução.</p>
+<p>A proposta do MVP não é automatizar correções nem substituir o desenvolvedor. O objetivo é funcionar como uma camada de triagem inteligente, auditável e somente leitura, reduzindo o tempo de diagnóstico e aumentando a qualidade da investigação inicial.</p>
+<h2>3. Contexto e problema</h2>
+<p>Atualmente, a resolução de chamados técnicos exige que o desenvolvedor leia o chamado, entenda o contexto, identifique o sistema afetado, interprete prints, busque trechos no código, consulte banco de dados quando necessário e tente relacionar o problema com ocorrências anteriores.</p>
+<p>Esse processo é manual, repetitivo e depende muito da memória e experiência individual do desenvolvedor.</p>
+<p>Os principais problemas são:</p>
+<ul>
+<li>demora para entender o contexto inicial do chamado;</li>
+<li>dificuldade para identificar rapidamente o sistema afetado;</li>
+<li>tempo gasto procurando possíveis causas no código e no banco;</li>
+<li>retrabalho em chamados recorrentes ou parecidos;</li>
+<li>perda de histórico técnico das análises feitas manualmente;</li>
+<li>baixa padronização na triagem técnica;</li>
+<li>ausência de relatório estruturado com evidências e hipóteses.</li>
+</ul>
+<h2>4. Objetivos</h2>
+<h3>4.1 Objetivo principal</h3>
+<p>Criar uma solução que realize pré-análise técnica automatizada de chamados GLPI, gerando relatórios com resumo, classificação, evidências, hipóteses de causa, nível de confiança, perguntas ao solicitante e próximos passos recomendados.</p>
+<h3>4.2 Objetivos específicos</h3>
+<ul>
+<li>Reduzir o tempo médio de diagnóstico inicial.</li>
+<li>Aumentar o acerto na identificação do sistema afetado.</li>
+<li>Apoiar a investigação de erros em sistemas legados.</li>
+<li>Apoiar a investigação de inconsistências de dados.</li>
+<li>Analisar texto, comentários e prints anexados aos chamados.</li>
+<li>Cruzar informações do chamado com código-fonte e banco SQL Server.</li>
+<li>Reutilizar histórico de análises anteriores para identificar chamados semelhantes.</li>
+<li>Gerar relatório HTML individual por chamado.</li>
+<li>Enviar e-mail consolidado com resumo e links dos relatórios.</li>
+<li>Registrar logs completos e histórico técnico em banco.</li>
+<li>Permitir execução manual por número de chamado.</li>
+<li>Manter arquitetura plugável para diferentes modelos de IA.</li>
+<li>Preparar evolução futura para Hangfire, SQL Server, tela administrativa e uso institucional.</li>
+</ul>
+<h2>5. Público-alvo</h2>
+<h3>5.1 Usuário inicial</h3>
+<p>Desenvolvedor responsável por manutenção e evolução de sistemas internos, atuando sobre chamados atribuídos a ele no GLPI.</p>
+<h3>5.2 Usuários futuros</h3>
+<ul>
+<li>Outros desenvolvedores do setor.</li>
+<li>Líder técnico.</li>
+<li>Equipe de sustentação.</li>
+<li>Equipe de suporte de sistemas.</li>
+<li>Equipe de infraestrutura.</li>
+<li>Segurança da informação.</li>
+<li>GT de IA ou inovação.</li>
+<li>Gestão interessada em indicadores de retrabalho, recorrência e produtividade.</li>
+</ul>
+<h2>6. Escopo do MVP</h2>
+<p>O MVP deverá contemplar:</p>
+<ul>
+<li>Aplicação inicial em formato <strong>Console App .NET</strong>.</li>
+<li>Execução agendada por tarefa externa do sistema operacional.</li>
+<li>Consulta de chamados atribuídos ao usuário configurado.</li>
+<li>Filtro por chamados com status:</li>
+<li>Novo;</li>
+<li>Em atendimento;</li>
+<li>Pendente.</li>
+<li>Análise apenas de chamados novos ou atualizados.</li>
+<li>Reanálise apenas quando houver atualização relevante.</li>
+<li>Filtro inicial para:</li>
+<li>erros em sistemas existentes;</li>
+<li>inconsistências de dados.</li>
+<li>Identificação do sistema provável por:</li>
+<li>texto do chamado;</li>
+<li>palavras-chave configuradas;</li>
+<li>mapeamento manual de sistemas.</li>
+<li>Configuração dos sistemas via `appsettings.json`.</li>
+<li>Consulta a repositórios Azure DevOps previamente clonados ou pastas locais.</li>
+<li>Consulta a banco SQL Server via MCP existente.</li>
+<li>Análise de prints/imagens anexadas.</li>
+<li>Busca de análises anteriores semelhantes no histórico.</li>
+<li>Geração de relatório HTML individual por chamado.</li>
+<li>Organização de relatórios por chamado.</li>
+<li>Envio de e-mail consolidado com resumo e links.</li>
+<li>Persistência em SQLite no MVP.</li>
+<li>Registro de logs completos em banco.</li>
+<li>Registro de tempo, modelo utilizado, tokens/custo quando disponíveis.</li>
+<li>Execução manual por número do chamado via linha de comando.</li>
+</ul>
+<h2>7. Fora do escopo do MVP</h2>
+<p>Não fazem parte do MVP:</p>
+<ul>
+<li>Alterar chamados no GLPI.</li>
+<li>Adicionar comentários no GLPI.</li>
+<li>Alterar status, prioridade, categoria ou responsável.</li>
+<li>Responder automaticamente ao solicitante.</li>
+<li>Alterar dados em banco.</li>
+<li>Executar scripts de correção.</li>
+<li>Alterar código-fonte.</li>
+<li>Criar branch, commit ou pull request.</li>
+<li>Executar deploy.</li>
+<li>Consultar logs diretamente em servidor de produção.</li>
+<li>Rodar via Hangfire.</li>
+<li>Criar dashboard web.</li>
+<li>Criar tela administrativa.</li>
+<li>Atuar sobre chamados de outros desenvolvedores.</li>
+<li>Resolver solicitações de novas funcionalidades ou novos sistemas.</li>
+<li>Tomar decisões autônomas em produção.</li>
+</ul>
+<h2>8. Escopo futuro</h2>
+<p>A solução poderá evoluir para:</p>
+<ul>
+<li>Execução via Hangfire.</li>
+<li>Persistência em SQL Server.</li>
+<li>Configuração de sistemas em banco de dados.</li>
+<li>Tela administrativa para configuração de sistemas, palavras-chave, repositórios e bancos.</li>
+<li>Consulta segura a logs com solução definida junto à infraestrutura.</li>
+<li>Suporte a múltiplos desenvolvedores.</li>
+<li>Uso institucional pela equipe.</li>
+<li>Dashboard de análises.</li>
+<li>Indicadores de recorrência, retrabalho e tempo de diagnóstico.</li>
+<li>Comentário privado no GLPI com aprovação humana.</li>
+<li>Rascunho de resposta ao solicitante.</li>
+<li>Integração mais profunda com Azure DevOps.</li>
+<li>Relatórios em versão técnica e versão resumida para gestão/suporte.</li>
+</ul>
+<h2>9. Fontes de dados</h2>
+<h3>9.1 GLPI</h3>
+<p>O agente deverá consultar:</p>
+<ul>
+<li>ID do chamado;</li>
+<li>título;</li>
+<li>descrição;</li>
+<li>status;</li>
+<li>prioridade;</li>
+<li>categoria;</li>
+<li>data de abertura;</li>
+<li>data da última atualização;</li>
+<li>responsável;</li>
+<li>comentários;</li>
+<li>anexos, especialmente imagens;</li>
+<li>solicitante, quando disponível;</li>
+<li>sistema/categoria associada, quando disponível.</li>
+</ul>
+<h3>9.2 Repositórios</h3>
+<p>O agente deverá consultar repositórios:</p>
+<ul>
+<li>Azure DevOps previamente clonados;</li>
+<li>pastas locais;</li>
+<li>pastas de rede, quando configuradas.</li>
+</ul>
+<p>A análise poderá considerar:</p>
+<ul>
+<li>nomes de arquivos;</li>
+<li>nomes de classes;</li>
+<li>controllers;</li>
+<li>services;</li>
+<li>repositories;</li>
+<li>endpoints;</li>
+<li>mensagens de erro;</li>
+<li>termos de negócio;</li>
+<li>procedures versionadas;</li>
+<li>arquivos de configuração permitidos;</li>
+<li>histórico local disponível, se configurado.</li>
+</ul>
+<h3>9.3 Banco de dados</h3>
+<p>O agente poderá consultar bancos SQL Server por meio do MCP existente.</p>
+<p>Premissas:</p>
+<ul>
+<li>O MCP já possui permissões configuradas.</li>
+<li>A operação do agente será somente leitura.</li>
+<li>Nenhuma operação de escrita será permitida.</li>
+<li>As permissões e limites definidos no MCP deverão ser respeitados.</li>
+<li>As consultas executadas deverão ser registradas para auditoria.</li>
+</ul>
+<h3>9.4 Logs</h3>
+<p>A consulta a logs de produção não fará parte do MVP.</p>
+<p>Como os logs ficam em pasta no servidor interno, a estratégia de acesso deverá ser discutida com o time de infraestrutura.</p>
+<p>Possíveis soluções futuras:</p>
+<ul>
+<li>cópia controlada de logs para pasta segura;</li>
+<li>API interna para consulta de logs;</li>
+<li>MCP específico de logs com acesso restrito;</li>
+<li>exportação periódica de trechos relevantes;</li>
+<li>indexação segura e auditada dos logs.</li>
+</ul>
+<h3>9.5 Imagens e prints</h3>
+<p>O agente deverá analisar prints/imagens anexadas para:</p>
+<ul>
+<li>extrair mensagens de erro;</li>
+<li>identificar textos visíveis;</li>
+<li>descrever visualmente o contexto da tela;</li>
+<li>complementar a interpretação do chamado;</li>
+<li>usar imagens principalmente quando houver mensagem de erro visível.</li>
+</ul>
+<h2>10. Configuração de sistemas</h2>
+<p>No MVP, os sistemas serão configurados via <code>appsettings.json</code>.</p>
+<p>Cada sistema poderá conter:</p>
+<ul>
+<li>nome;</li>
+<li>aliases;</li>
+<li>status ativo/inativo;</li>
+<li>palavras-chave;</li>
+<li>repositórios associados;</li>
+<li>bancos associados;</li>
+<li>padrões conhecidos de erro;</li>
+<li>observações técnicas;</li>
+<li>observações de negócio;</li>
+<li>caminhos locais permitidos.</li>
+</ul>
+<p>Exemplo conceitual:</p>
+<pre><code>{
+  &quot;Sistemas&quot;: [
+    {
+      &quot;Nome&quot;: &quot;Sistema Legado A&quot;,
+      &quot;Ativo&quot;: true,
+      &quot;Aliases&quot;: [&quot;Sistema A&quot;, &quot;Modulo A&quot;],
+      &quot;PalavrasChave&quot;: [&quot;matrícula&quot;, &quot;turma&quot;, &quot;inscrição&quot;, &quot;erro ao salvar&quot;],
+      &quot;Repositorios&quot;: [
+        &quot;C:\\Repos\\SistemaA&quot;
+      ],
+      &quot;Bancos&quot;: [
+        &quot;BancoSistemaA&quot;
+      ],
+      &quot;Observacoes&quot;: &quot;Sistema legado mantido pela equipe de desenvolvimento.&quot;
+    }
+  ]
+}</code></pre>
+<p>Futuramente, essa configuração deverá migrar para banco de dados e, depois, para uma tela administrativa.</p>
+<h2>11. Critérios para seleção de chamados</h2>
+<p>O agente deverá analisar apenas chamados:</p>
+<ul>
+<li>atribuídos ao usuário configurado;</li>
+<li>com status Novo, Em atendimento ou Pendente;</li>
+<li>novos ou atualizados desde a última análise;</li>
+<li>classificados como erro em sistema existente ou inconsistência de dados;</li>
+<li>relacionados, preferencialmente, a sistemas configurados.</li>
+</ul>
+<h2>12. Atualizações relevantes</h2>
+<p>Um chamado deverá ser reanalisado quando houver:</p>
+<ul>
+<li>novo comentário;</li>
+<li>novo anexo;</li>
+<li>alteração no título;</li>
+<li>alteração na descrição;</li>
+<li>alteração de status.</li>
+</ul>
+<p>Chamados sem atualização relevante não deverão gerar nova análise.</p>
+<h2>13. Tratamento de sistemas não identificados</h2>
+<p>O agente deverá trabalhar com uma lista de sistemas configurados/permitidos.</p>
+<p>Quando o sistema for identificado, a análise completa será executada.</p>
+<p>Quando o sistema não for identificado, o agente deverá:</p>
+<ul>
+<li>gerar relatório mínimo;</li>
+<li>indicar que o sistema não foi identificado;</li>
+<li>explicar quais informações estão faltando;</li>
+<li>sugerir perguntas para o solicitante;</li>
+<li>incluir o chamado no e-mail consolidado como não analisado por falta de contexto suficiente.</li>
+</ul>
+<h2>14. Fluxo principal</h2>
+<p>1. A execução é iniciada manualmente ou por agendamento.</p>
+<p>2. O sistema registra uma nova execução.</p>
+<p>3. O sistema consulta os chamados atribuídos ao usuário no GLPI.</p>
+<p>4. O sistema filtra chamados com status Novo, Em atendimento ou Pendente.</p>
+<p>5. O sistema identifica chamados novos ou atualizados.</p>
+<p>6. O sistema ignora chamados já analisados sem atualização relevante.</p>
+<p>7. O sistema classifica o tipo do chamado.</p>
+<p>8. O sistema filtra chamados elegíveis ao MVP.</p>
+<p>9. O sistema tenta identificar o sistema afetado.</p>
+<p>10. Se o sistema não for identificado, gera relatório mínimo.</p>
+<p>11. Se o sistema for identificado, analisa texto, comentários e imagens.</p>
+<p>12. O sistema busca análises antigas semelhantes.</p>
+<p>13. O sistema busca evidências nos repositórios configurados.</p>
+<p>14. O sistema consulta banco SQL Server via MCP, quando necessário e permitido.</p>
+<p>15. O agente gera hipóteses de causa.</p>
+<p>16. O agente calcula nível de confiança.</p>
+<p>17. O agente recomenda próximos passos.</p>
+<p>18. O agente gera perguntas ao solicitante.</p>
+<p>19. O agente gera sugestão de resposta técnica quando houver dados suficientes.</p>
+<p>20. O sistema gera relatório HTML individual.</p>
+<p>21. O sistema salva metadados, relatório, resumo, fontes e logs no banco.</p>
+<p>22. O sistema salva arquivos na estrutura de execução.</p>
+<p>23. O sistema envia e-mail consolidado.</p>
+<p>24. O sistema encerra a execução com estatísticas e logs.</p>
+<h2>15. Execução manual</h2>
+<p>O MVP deverá permitir análise manual de um chamado específico via linha de comando.</p>
+<p>Exemplo:</p>
+<pre><code>analisador-glpi --ticket 12345</code></pre>
+<p>Esse modo deverá permitir reanálise sob demanda e investigação de chamados urgentes fora dos horários programados.</p>
+<h2>16. Periodicidade</h2>
+<p>No MVP, a execução agendada ocorrerá duas vezes ao dia:</p>
+<ul>
+<li>11:00;</li>
+<li>15:00.</li>
+</ul>
+<p>Os horários deverão ser parametrizáveis.</p>
+<p>No MVP, o agendamento poderá ser feito via tarefa externa do sistema operacional.</p>
+<p>No futuro, a execução deverá migrar para Hangfire.</p>
+<h2>17. Organização de arquivos</h2>
+<h3>17.1 Relatórios por chamado</h3>
+<p>Os relatórios HTML deverão seguir a estrutura:</p>
+<pre><code>/relatorios/chamado-12345/analise-2026-06-22-1100.html</code></pre>
+<p>Essa estrutura permite manter múltiplas análises do mesmo chamado.</p>
+<h3>17.2 Pasta de execuções</h3>
+<p>O sistema deverá manter uma pasta de execuções para facilitar auditoria e debug.</p>
+<p>Exemplo:</p>
+<pre><code>/execucoes/2026-06-22/1100/
+  resumo-execucao.json
+  email-consolidado.html
+  logs.txt</code></pre>
+<h2>18. Saídas do sistema</h2>
+<h3>18.1 Relatório HTML individual</h3>
+<p>Cada chamado analisado deverá gerar um relatório HTML individual, visualmente limpo, corporativo e fácil de compartilhar com devs.</p>
+<p>O relatório deverá ter:</p>
+<ul>
+<li>cabeçalho com dados do chamado;</li>
+<li>resumo executivo;</li>
+<li>detalhamento técnico;</li>
+<li>cards ou seções visuais;</li>
+<li>indicação de nível de confiança;</li>
+<li>fontes utilizadas;</li>
+<li>hipóteses e evidências;</li>
+<li>perguntas ao solicitante;</li>
+<li>próximos passos.</li>
+</ul>
+<h3>18.2 E-mail consolidado</h3>
+<p>A cada execução, o sistema deverá enviar um e-mail consolidado para uma lista configurável no <code>appsettings.json</code>.</p>
+<p>No MVP, a lista começará apenas com o e-mail do desenvolvedor responsável.</p>
+<p>O e-mail deverá conter:</p>
+<ul>
+<li>data/hora da execução;</li>
+<li>quantidade de chamados encontrados;</li>
+<li>quantidade de chamados analisados;</li>
+<li>quantidade de chamados ignorados;</li>
+<li>chamados sem sistema identificado;</li>
+<li>resumo dos chamados analisados;</li>
+<li>nível de confiança de cada análise;</li>
+<li>severidade técnica recomendada;</li>
+<li>links ou caminhos dos relatórios HTML;</li>
+<li>alertas de falha ou limitações.</li>
+</ul>
+<p>O e-mail não deverá conter o relatório completo, apenas resumo e links.</p>
+<h3>18.3 Histórico em banco</h3>
+<p>No MVP, o histórico será salvo em SQLite.</p>
+<p>Em produção, a persistência deverá migrar para SQL Server.</p>
+<p>O sistema deverá salvar:</p>
+<ul>
+<li>metadados da execução;</li>
+<li>chamados encontrados;</li>
+<li>chamados analisados;</li>
+<li>chamados ignorados;</li>
+<li>versão da análise;</li>
+<li>resumo da análise;</li>
+<li>relatório completo;</li>
+<li>caminho do HTML;</li>
+<li>classificação;</li>
+<li>sistema provável;</li>
+<li>nível de confiança;</li>
+<li>severidade técnica recomendada;</li>
+<li>fontes utilizadas;</li>
+<li>ferramentas utilizadas;</li>
+<li>consultas realizadas;</li>
+<li>arquivos analisados;</li>
+<li>imagens analisadas;</li>
+<li>prompts completos com dados sensíveis mascarados;</li>
+<li>modelo utilizado;</li>
+<li>tempo de execução;</li>
+<li>tokens/custo quando disponíveis;</li>
+<li>erros ocorridos;</li>
+<li>data e hora.</li>
+</ul>
+<h2>19. Estrutura obrigatória do relatório</h2>
+<p>Cada relatório deverá conter:</p>
+<p>1. Identificação do chamado.</p>
+<p>2. Resumo executivo.</p>
+<p>3. Classificação do chamado.</p>
+<p>4. Sistema provável afetado.</p>
+<p>5. Severidade técnica recomendada.</p>
+<p>6. Nível de confiança da análise.</p>
+<p>7. Fontes utilizadas.</p>
+<p>8. Evidências encontradas.</p>
+<p>9. Hipóteses de causa.</p>
+<p>10. Arquivos e repositórios relacionados.</p>
+<p>11. Consultas de banco realizadas.</p>
+<p>12. Logs relacionados.</p>
+<p>13. Riscos ou dados insuficientes.</p>
+<p>14. Perguntas para o solicitante.</p>
+<p>15. Próximos passos recomendados.</p>
+<p>16. Sugestão de resposta técnica, sem publicar no GLPI.</p>
+<p>17. Histórico da análise.</p>
+<p>O relatório deverá conter resumo executivo e detalhamento técnico no mesmo HTML.</p>
+<h2>20. Nível de confiança</h2>
+<p>O agente deverá indicar nível de confiança para cada análise.</p>
+<p>Classificação sugerida:</p>
+<ul>
+<li><strong>Alta:</strong> há evidências fortes e convergentes, como mensagem de erro identificada, trecho de código relacionado e dados compatíveis.</li>
+<li><strong>Média:</strong> há indícios relevantes, mas faltam dados para confirmação total.</li>
+<li><strong>Baixa:</strong> o chamado possui pouca informação, não há evidências suficientes ou a causa provável é incerta.</li>
+</ul>
+<p>O nível de confiança deverá evitar que o relatório pareça mais conclusivo do que realmente é.</p>
+<h2>21. Severidade técnica recomendada</h2>
+<p>Além da prioridade registrada no GLPI, o agente deverá recomendar uma severidade técnica.</p>
+<p>Essa recomendação não altera o chamado automaticamente.</p>
+<p>Classificação sugerida:</p>
+<ul>
+<li><strong>Baixa:</strong> erro isolado, baixo impacto ou com contorno simples.</li>
+<li><strong>Média:</strong> afeta fluxo relevante, mas não impede operação geral.</li>
+<li><strong>Alta:</strong> impede operação importante ou afeta vários usuários.</li>
+<li><strong>Crítica:</strong> afeta processo essencial, múltiplas unidades ou operação institucional sensível.</li>
+</ul>
+<p>A severidade deverá ser apresentada como recomendação, não como decisão final.</p>
+<h2>22. Sugestão de resposta técnica</h2>
+<p>O agente poderá gerar sugestão de resposta técnica para o GLPI somente quando houver dados suficientes.</p>
+<p>A sugestão não deverá ser publicada automaticamente.</p>
+<p>A resposta sugerida poderá conter:</p>
+<ul>
+<li>resumo do entendimento do problema;</li>
+<li>informações adicionais necessárias;</li>
+<li>próximos passos de investigação;</li>
+<li>orientação para o solicitante;</li>
+<li>indicação de que a análise está em andamento.</li>
+</ul>
+<h2>23. Perguntas para o solicitante</h2>
+<p>O relatório deverá sempre conter uma seção de perguntas para o solicitante.</p>
+<p>Exemplos:</p>
+<ul>
+<li>Qual usuário foi afetado?</li>
+<li>Em qual tela ocorreu o erro?</li>
+<li>O erro ocorre sempre ou apenas em determinado registro?</li>
+<li>Qual o horário aproximado do erro?</li>
+<li>Qual matrícula, código ou identificador do registro?</li>
+<li>O problema ocorre com outros usuários?</li>
+<li>Houve alguma alteração recente no processo?</li>
+<li>É possível enviar novo print com a mensagem completa?</li>
+</ul>
+<p>Quando não houver dúvidas relevantes, a seção poderá indicar que não há perguntas adicionais no momento.</p>
+<h2>24. Fontes utilizadas</h2>
+<p>O relatório deverá apresentar obrigatoriamente as fontes utilizadas na análise.</p>
+<p>Exemplos de fontes:</p>
+<ul>
+<li>chamado GLPI;</li>
+<li>comentários do chamado;</li>
+<li>imagem anexada;</li>
+<li>arquivo de código;</li>
+<li>repositório;</li>
+<li>tabela consultada;</li>
+<li>consulta executada via MCP;</li>
+<li>análise anterior semelhante;</li>
+<li>configuração do sistema.</li>
+</ul>
+<p>Essa seção é essencial para aumentar confiança, auditabilidade e revisão humana.</p>
+<h2>25. Autonomia</h2>
+<p>No MVP, o agente terá autonomia apenas para:</p>
+<ul>
+<li>ler dados permitidos;</li>
+<li>analisar informações;</li>
+<li>gerar relatório;</li>
+<li>enviar e-mail;</li>
+<li>salvar histórico.</li>
+</ul>
+<p>O agente não terá autonomia para:</p>
+<ul>
+<li>alterar GLPI;</li>
+<li>alterar banco;</li>
+<li>alterar código;</li>
+<li>executar scripts;</li>
+<li>tomar decisão de negócio;</li>
+<li>interagir com solicitantes;</li>
+<li>fechar chamados;</li>
+<li>abrir pull requests.</li>
+</ul>
+<h2>26. Modelo de IA</h2>
+<p>A solução deverá ser plugável para permitir troca de modelo ou provedor.</p>
+<p>Opções previstas:</p>
+<ul>
+<li>Azure OpenAI;</li>
+<li>OpenAI;</li>
+<li>Ollama;</li>
+<li>Foundry Local.</li>
+</ul>
+<p>A arquitetura deverá evitar acoplamento direto com um único provedor.</p>
+<p>Deverá existir uma abstração para o serviço de IA, permitindo troca futura sem reescrever o fluxo principal.</p>
+<h2>27. Segurança e auditoria</h2>
+<p>O sistema deverá operar com foco em segurança, rastreabilidade e revisão humana.</p>
+<p>Premissas:</p>
+<ul>
+<li>Operação somente leitura no MVP.</li>
+<li>Respeito às permissões do GLPI, repositórios e MCP de banco.</li>
+<li>Registro de fontes utilizadas.</li>
+<li>Registro de ferramentas chamadas.</li>
+<li>Registro de consultas executadas.</li>
+<li>Registro de prompts com dados sensíveis mascarados.</li>
+<li>Registro de modelo usado, tempo de execução e tokens/custo quando disponíveis.</li>
+<li>Nenhuma ação automática de correção.</li>
+<li>Nenhuma alteração em produção.</li>
+<li>Relatórios compartilháveis com desenvolvedores.</li>
+</ul>
+<h2>28. Requisitos funcionais</h2>
+<h3>RF01 — Consultar chamados atribuídos</h3>
+<p>O sistema deverá consultar chamados atribuídos ao usuário configurado no GLPI.</p>
+<h3>RF02 — Filtrar por status</h3>
+<p>O sistema deverá considerar apenas chamados com status Novo, Em atendimento ou Pendente.</p>
+<h3>RF03 — Detectar chamados novos ou atualizados</h3>
+<p>O sistema deverá identificar chamados novos ou com atualização relevante desde a última análise.</p>
+<h3>RF04 — Ignorar chamados já analisados</h3>
+<p>O sistema deverá ignorar chamados já analisados quando não houver atualização relevante.</p>
+<h3>RF05 — Classificar chamados</h3>
+<p>O sistema deverá classificar chamados por tipo, como erro em sistema existente, inconsistência de dados, dúvida, melhoria ou solicitação.</p>
+<h3>RF06 — Filtrar chamados elegíveis</h3>
+<p>O sistema deverá analisar apenas chamados elegíveis conforme escopo do MVP.</p>
+<h3>RF07 — Identificar sistema provável</h3>
+<p>O sistema deverá identificar o sistema provável com base no texto do chamado, palavras-chave e mapeamento manual.</p>
+<h3>RF08 — Tratar sistema não identificado</h3>
+<p>O sistema deverá gerar relatório mínimo quando não conseguir identificar o sistema afetado.</p>
+<h3>RF09 — Analisar imagens anexadas</h3>
+<p>O sistema deverá analisar imagens anexadas para extrair mensagens de erro e contexto visual.</p>
+<h3>RF10 — Buscar análises semelhantes</h3>
+<p>O sistema deverá buscar análises anteriores semelhantes no histórico.</p>
+<h3>RF11 — Buscar evidências em repositórios</h3>
+<p>O sistema deverá buscar arquivos, classes, mensagens, endpoints e termos relacionados nos repositórios configurados.</p>
+<h3>RF12 — Consultar banco via MCP</h3>
+<p>O sistema poderá consultar bancos SQL Server por meio do MCP existente, respeitando as permissões configuradas.</p>
+<h3>RF13 — Gerar hipóteses de causa</h3>
+<p>O agente deverá gerar hipóteses de causa com base nas evidências encontradas.</p>
+<h3>RF14 — Gerar próximos passos</h3>
+<p>O agente deverá sugerir próximos passos técnicos para investigação.</p>
+<h3>RF15 — Gerar perguntas para o solicitante</h3>
+<p>O agente deverá gerar perguntas relevantes para complementar a análise do chamado.</p>
+<h3>RF16 — Gerar sugestão de resposta técnica</h3>
+<p>O agente deverá gerar sugestão de resposta técnica quando houver dados suficientes.</p>
+<h3>RF17 — Gerar relatório HTML</h3>
+<p>O sistema deverá gerar relatório HTML individual por chamado analisado.</p>
+<h3>RF18 — Enviar e-mail consolidado</h3>
+<p>O sistema deverá enviar e-mail consolidado com resumo da execução e links para relatórios.</p>
+<h3>RF19 — Salvar histórico em banco</h3>
+<p>O sistema deverá salvar logs e histórico completo das análises em banco.</p>
+<h3>RF20 — Permitir análise manual</h3>
+<p>O sistema deverá permitir análise manual de um chamado específico via linha de comando.</p>
+<h3>RF21 — Registrar fontes utilizadas</h3>
+<p>O sistema deverá registrar e exibir as fontes utilizadas na análise.</p>
+<h3>RF22 — Registrar uso do modelo</h3>
+<p>O sistema deverá registrar modelo usado, duração, tokens e custo quando disponíveis.</p>
+<h3>RF23 — Registrar prompts mascarados</h3>
+<p>O sistema deverá salvar prompts completos com dados sensíveis mascarados.</p>
+<h3>RF24 — Gerar pasta de execução</h3>
+<p>O sistema deverá gerar pasta de execução com resumo, e-mail consolidado e logs da execução.</p>
+<h2>29. Requisitos não funcionais</h2>
+<h3>RNF01 — Segurança</h3>
+<p>O sistema deverá respeitar permissões de acesso configuradas para GLPI, banco e repositórios.</p>
+<h3>RNF02 — Somente leitura</h3>
+<p>O MVP deverá operar em modo somente leitura sobre GLPI, banco e repositórios.</p>
+<h3>RNF03 — Auditabilidade</h3>
+<p>Toda análise deverá ser rastreável, registrando fontes consultadas, ferramentas utilizadas e resultado produzido.</p>
+<h3>RNF04 — Plugabilidade de modelo</h3>
+<p>A solução deverá permitir troca futura do modelo de IA ou provedor sem reescrever o núcleo da aplicação.</p>
+<h3>RNF05 — Configuração externa</h3>
+<p>Sistemas, horários, caminhos, destinatários e integrações deverão ser parametrizáveis.</p>
+<h3>RNF06 — Execução agendada</h3>
+<p>O sistema deverá suportar execução agendada.</p>
+<h3>RNF07 — Tolerância a falhas</h3>
+<p>Falhas na análise de um chamado não deverão interromper a análise dos demais.</p>
+<h3>RNF08 — Histórico persistente</h3>
+<p>O histórico das análises deverá ser mantido em banco para consulta futura.</p>
+<h3>RNF09 — Baixo acoplamento</h3>
+<p>O agente deverá ser separado das integrações, permitindo evolução independente dos conectores.</p>
+<h3>RNF10 — Operação local ou interna</h3>
+<p>A arquitetura deverá considerar a possibilidade de execução com modelo local ou em ambiente interno.</p>
+<h3>RNF11 — Rastreabilidade</h3>
+<p>Cada relatório deverá permitir rastrear quais dados foram usados para gerar a análise.</p>
+<h3>RNF12 — Compartilhamento técnico</h3>
+<p>Os relatórios poderão ser compartilhados com outros desenvolvedores do time.</p>
+<h3>RNF13 — Observabilidade</h3>
+<p>O sistema deverá registrar logs de execução, falhas, duração e resultados.</p>
+<h3>RNF14 — Evolução para produção</h3>
+<p>A arquitetura deverá permitir migração de SQLite para SQL Server e de Console App para Hangfire.</p>
+<h2>30. Critérios de aceite do MVP</h2>
+<p>O MVP será considerado aceitável quando:</p>
+<ul>
+<li>Conseguir consultar chamados atribuídos ao usuário no GLPI.</li>
+<li>Filtrar apenas chamados Novo, Em atendimento e Pendente.</li>
+<li>Detectar chamados novos ou atualizados.</li>
+<li>Ignorar chamados já analisados sem atualização relevante.</li>
+<li>Identificar sistema provável usando texto, palavras-chave e configuração.</li>
+<li>Gerar relatório mínimo quando o sistema não for identificado.</li>
+<li>Analisar prints/imagens anexadas ao chamado.</li>
+<li>Consultar repositórios locais configurados.</li>
+<li>Consultar banco SQL Server via MCP existente.</li>
+<li>Buscar análises semelhantes no histórico.</li>
+<li>Gerar relatório HTML individual por chamado.</li>
+<li>Salvar metadados, resumo, relatório completo e logs no banco.</li>
+<li>Salvar prompts mascarados.</li>
+<li>Registrar fontes utilizadas.</li>
+<li>Registrar modelo, duração e tokens/custo quando disponíveis.</li>
+<li>Gerar pasta de execução.</li>
+<li>Enviar e-mail consolidado com resumo e links.</li>
+<li>Permitir execução manual por número de chamado.</li>
+<li>Operar sem alterar GLPI, banco ou código-fonte.</li>
+</ul>
+<h2>31. Indicadores de sucesso</h2>
+<ul>
+<li>Redução do tempo médio de diagnóstico.</li>
+<li>Aumento da taxa de identificação correta do sistema afetado.</li>
+<li>Aumento do acerto nas hipóteses iniciais.</li>
+<li>Redução de retrabalho investigativo.</li>
+<li>Geração de histórico técnico reutilizável.</li>
+<li>Redução de análises repetidas para problemas recorrentes.</li>
+<li>Maior padronização na triagem técnica.</li>
+<li>Maior rastreabilidade das evidências usadas.</li>
+<li>Melhoria na qualidade das respostas técnicas ao solicitante.</li>
+</ul>
+<h2>32. Riscos e cuidados</h2>
+<h3>32.1 Risco: análise parecer mais conclusiva do que realmente é</h3>
+<p>Mitigação:</p>
+<ul>
+<li>sempre exibir nível de confiança;</li>
+<li>destacar dados insuficientes;</li>
+<li>apresentar hipóteses como hipóteses;</li>
+<li>manter revisão humana obrigatória.</li>
+</ul>
+<h3>32.2 Risco: acesso indevido a dados</h3>
+<p>Mitigação:</p>
+<ul>
+<li>operação somente leitura;</li>
+<li>uso do MCP já permissionado;</li>
+<li>registrar consultas;</li>
+<li>mascarar dados sensíveis em prompts e logs.</li>
+</ul>
+<h3>32.3 Risco: dependência de modelo externo</h3>
+<p>Mitigação:</p>
+<ul>
+<li>arquitetura plugável;</li>
+<li>suporte previsto a Azure OpenAI, OpenAI, Ollama e Foundry Local;</li>
+<li>possibilidade de execução local/interna.</li>
+</ul>
+<h3>32.4 Risco: chamados mal descritos</h3>
+<p>Mitigação:</p>
+<ul>
+<li>relatório mínimo para sistema não identificado;</li>
+<li>perguntas obrigatórias ao solicitante;</li>
+<li>indicação explícita de contexto insuficiente.</li>
+</ul>
+<h3>32.5 Risco: excesso de ruído no e-mail</h3>
+<p>Mitigação:</p>
+<ul>
+<li>e-mail consolidado;</li>
+<li>relatório completo separado em HTML;</li>
+<li>filtro de chamados novos/atualizados.</li>
+</ul>
+<h2>33. Arquitetura conceitual</h2>
+<p>Componentes principais:</p>
+<p>1. <strong>Scheduler/Executor</strong></p>
+<ul>
+<li>No MVP: execução por Console App e agendamento externo.</li>
+<li>Futuro: Hangfire.</li>
+</ul>
+<p>2. <strong>GLPI Connector</strong></p>
+<ul>
+<li>Consulta chamados, comentários, status e anexos.</li>
+</ul>
+<p>3. <strong>Ticket Classifier</strong></p>
+<ul>
+<li>Classifica tipo do chamado e elegibilidade.</li>
+</ul>
+<p>4. <strong>System Resolver</strong></p>
+<ul>
+<li>Identifica sistema provável com base em texto, palavras-chave e configuração.</li>
+</ul>
+<p>5. <strong>Image Analyzer</strong></p>
+<ul>
+<li>Extrai mensagens de erro e contexto visual de prints.</li>
+</ul>
+<p>6. <strong>Repository Analyzer</strong></p>
+<ul>
+<li>Busca arquivos, classes, endpoints e mensagens de erro nos repositórios.</li>
+</ul>
+<p>7. <strong>Database MCP Client</strong></p>
+<ul>
+<li>Consulta SQL Server via MCP existente.</li>
+</ul>
+<p>8. <strong>History Analyzer</strong></p>
+<ul>
+<li>Busca análises anteriores semelhantes.</li>
+</ul>
+<p>9. <strong>AI Orchestrator</strong></p>
+<ul>
+<li>Coordena prompts, ferramentas, evidências e geração da análise.</li>
+</ul>
+<p>10. <strong>Report Generator</strong></p>
+<ul>
+<li>Gera HTML individual e resumo do e-mail.</li>
+</ul>
+<p>11. <strong>Email Sender</strong></p>
+<ul>
+<li>Envia e-mail consolidado para destinatários configurados.</li>
+</ul>
+<p>12. <strong>Audit/History Store</strong></p>
+<ul>
+<li>Salva execuções, análises, fontes, prompts mascarados e logs.</li>
+</ul>
+<h2>34. Modelo de dados conceitual</h2>
+<p>Entidades sugeridas para o MVP:</p>
+<ul>
+<li>`Execucao`</li>
+<li>`ChamadoAnalisado`</li>
+<li>`Analise`</li>
+<li>`FonteUtilizada`</li>
+<li>`ConsultaExecutada`</li>
+<li>`ArquivoAnalisado`</li>
+<li>`ImagemAnalisada`</li>
+<li>`PromptRegistrado`</li>
+<li>`ErroExecucao`</li>
+<li>`ConfiguracaoSistema`</li>
+</ul>
+<h2>35. Roadmap sugerido</h2>
+<h3>Fase 1 — MVP local</h3>
+<ul>
+<li>Console App.</li>
+<li>SQLite.</li>
+<li>appsettings.json.</li>
+<li>GLPI Connector.</li>
+<li>Repositórios locais.</li>
+<li>MCP SQL Server existente.</li>
+<li>Relatório HTML.</li>
+<li>E-mail consolidado.</li>
+<li>Histórico e logs.</li>
+</ul>
+<h3>Fase 2 — Robustez</h3>
+<ul>
+<li>Melhorias no classificador.</li>
+<li>Busca mais avançada em histórico.</li>
+<li>Melhor template HTML.</li>
+<li>Métricas de diagnóstico.</li>
+<li>Comparação de análises semelhantes.</li>
+<li>Melhorias de mascaramento.</li>
+</ul>
+<h3>Fase 3 — Produção interna</h3>
+<ul>
+<li>Migração para SQL Server.</li>
+<li>Hangfire.</li>
+<li>Configuração em banco.</li>
+<li>Melhor controle de permissões.</li>
+<li>Observabilidade.</li>
+<li>Validação com líder técnico, infraestrutura e segurança.</li>
+</ul>
+<h3>Fase 4 — Uso institucional</h3>
+<ul>
+<li>Tela administrativa.</li>
+<li>Múltiplos desenvolvedores.</li>
+<li>Dashboard.</li>
+<li>Indicadores gerenciais.</li>
+<li>Integração segura com logs.</li>
+<li>Rascunho de resposta no GLPI com aprovação humana.</li>
+</ul>
+<h2>36. Decisões finais confirmadas</h2>
+<ul>
+<li>Nome: <strong>Agente de Pré-Análise GLPI</strong>.</li>
+<li>Banco do MVP: <strong>SQLite configurável no appsettings.json</strong>.</li>
+<li>Banco em produção: <strong>SQL Server</strong>.</li>
+<li>Visual do HTML: <strong>bonito, legível e compartilhável com devs, sem exagero</strong>.</li>
+<li>Pasta de execuções: <strong>sim</strong>.</li>
+<li>E-mail: <strong>lista configurável, começando apenas com o desenvolvedor responsável</strong>.</li>
+<li>Registrar custo/tempo/modelo: <strong>sim</strong>.</li>
+<li>Salvar prompts: <strong>sim, com dados sensíveis mascarados</strong>.</li>
+<li>Mostrar fontes utilizadas: <strong>obrigatório</strong>.</li>
+<li>Severidade técnica: <strong>recomendação do agente, sem alterar o GLPI</strong>.</li>
+<li>Formatos desejados do PRD: <strong>Markdown e HTML</strong>.</li>
+</ul>
+      </section>
+    </article>
+  </main>
+</body>
+</html>

@@ -1,0 +1,40 @@
+# .NET
+bin/
+obj/
+TestResults/
+*.user
+*.suo
+*.rsuser
+
+# Build e cobertura
+artifacts/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+# Configuracoes locais e segredos
+appsettings.Local.json
+*.local.json
+.env
+.env.*
+!.env.example
+
+# Playwright e debug
+playwright-report/
+output/playwright/
+*.trace.zip
+
+# Superpowers visual companion
+.superpowers/
+
+# Banco local do MVP
+*.db
+*.db-shm
+*.db-wal
+
+# Sistema operacional e IDE
+.vs/
+.vscode/
+Thumbs.db
+Desktop.ini
