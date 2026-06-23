@@ -270,7 +270,7 @@ A automacao Playwright contra GLPI real sera validada manualmente em execucao co
 
 A primeira entrega sera aceita quando:
 
-- projeto .NET 10 estiver criado com separacao entre Console, Nucleo, Coleta GLPI, Persistencia e Testes;
+- projeto .NET 10 estiver criado com app console unico, pastas internas por responsabilidade e projeto de testes;
 - login GLPI funcionar com credenciais vindas de User Secrets;
 - navegador rodar `Headless` por padrao;
 - lista de chamados atribuidos for coletada;

@@ -36,9 +36,9 @@
 - Create: `src/AgenteSuporteGlpi/Execucoes/ExecucaoColeta.cs`
 - Create: `src/AgenteSuporteGlpi/Execucoes/EventoExecucao.cs`
 - Create: `tests/AgenteSuporteGlpi.Testes/AgenteSuporteGlpi.Testes.csproj`
-- Create: `tests/AgenteSuporteGlpi.Testes/Nucleo/FiltroChamadosTestes.cs`
-- Create: `tests/AgenteSuporteGlpi.Testes/Nucleo/HashConteudoChamadoTestes.cs`
-- Create: `tests/AgenteSuporteGlpi.Testes/Nucleo/ResultadoMudancaChamadoTestes.cs`
+- Create: `tests/AgenteSuporteGlpi.Testes/Chamados/FiltroChamadosTestes.cs`
+- Create: `tests/AgenteSuporteGlpi.Testes/Chamados/HashConteudoChamadoTestes.cs`
+- Create: `tests/AgenteSuporteGlpi.Testes/Chamados/ResultadoMudancaChamadoTestes.cs`
 - Create: `tests/AgenteSuporteGlpi.Testes/Persistencia/RepositorioChamadosTestes.cs`
 - Create: `tests/AgenteSuporteGlpi.Testes/ColetaGlpi/ParsingHtmlChamadoTestes.cs`
 - Create: `tests/AgenteSuporteGlpi.Testes/Fixtures/chamado-detalhe.html`
@@ -140,24 +140,24 @@ git add AgenteSuporteGlpi.slnx Directory.Build.props src tests
 git commit -m "chore: criar estrutura inicial da solucao"
 ```
 
-### Task 2: Modelos E Filtros Do Nucleo
+### Task 2: Modelos E Filtros De Chamados
 
 **Files:**
 - Create: `src/AgenteSuporteGlpi/Chamados/StatusChamado.cs`
 - Create: `src/AgenteSuporteGlpi/Chamados/ChamadoColetado.cs`
 - Create: `src/AgenteSuporteGlpi/Chamados/DetalhesChamadoColetado.cs`
 - Create: `src/AgenteSuporteGlpi/Chamados/FiltroChamados.cs`
-- Test: `tests/AgenteSuporteGlpi.Testes/Nucleo/FiltroChamadosTestes.cs`
+- Test: `tests/AgenteSuporteGlpi.Testes/Chamados/FiltroChamadosTestes.cs`
 
 - [ ] **Step 1: Escrever testes de filtro**
 
-Create `tests/AgenteSuporteGlpi.Testes/Nucleo/FiltroChamadosTestes.cs`:
+Create `tests/AgenteSuporteGlpi.Testes/Chamados/FiltroChamadosTestes.cs`:
 
 ```csharp
 using AgenteSuporteGlpi.Chamados;
 using FluentAssertions;
 
-namespace AgenteSuporteGlpi.Testes.Nucleo;
+namespace AgenteSuporteGlpi.Testes.Chamados;
 
 public sealed class FiltroChamadosTestes
 {
@@ -316,7 +316,7 @@ Expected: PASS.
 Run:
 
 ```powershell
-git add src/AgenteSuporteGlpi tests/AgenteSuporteGlpi.Testes/Nucleo/FiltroChamadosTestes.cs
+git add src/AgenteSuporteGlpi tests/AgenteSuporteGlpi.Testes/Chamados/FiltroChamadosTestes.cs
 git commit -m "feat: adicionar filtro de chamados elegiveis"
 ```
 
@@ -325,18 +325,18 @@ git commit -m "feat: adicionar filtro de chamados elegiveis"
 **Files:**
 - Create: `src/AgenteSuporteGlpi/Chamados/HashConteudoChamado.cs`
 - Create: `src/AgenteSuporteGlpi/Chamados/ResultadoMudancaChamado.cs`
-- Test: `tests/AgenteSuporteGlpi.Testes/Nucleo/HashConteudoChamadoTestes.cs`
-- Test: `tests/AgenteSuporteGlpi.Testes/Nucleo/ResultadoMudancaChamadoTestes.cs`
+- Test: `tests/AgenteSuporteGlpi.Testes/Chamados/HashConteudoChamadoTestes.cs`
+- Test: `tests/AgenteSuporteGlpi.Testes/Chamados/ResultadoMudancaChamadoTestes.cs`
 
 - [ ] **Step 1: Escrever testes de hash**
 
-Create `tests/AgenteSuporteGlpi.Testes/Nucleo/HashConteudoChamadoTestes.cs`:
+Create `tests/AgenteSuporteGlpi.Testes/Chamados/HashConteudoChamadoTestes.cs`:
 
 ```csharp
 using AgenteSuporteGlpi.Chamados;
 using FluentAssertions;
 
-namespace AgenteSuporteGlpi.Testes.Nucleo;
+namespace AgenteSuporteGlpi.Testes.Chamados;
 
 public sealed class HashConteudoChamadoTestes
 {
@@ -362,13 +362,13 @@ public sealed class HashConteudoChamadoTestes
 
 - [ ] **Step 2: Escrever testes de mudanca**
 
-Create `tests/AgenteSuporteGlpi.Testes/Nucleo/ResultadoMudancaChamadoTestes.cs`:
+Create `tests/AgenteSuporteGlpi.Testes/Chamados/ResultadoMudancaChamadoTestes.cs`:
 
 ```csharp
 using AgenteSuporteGlpi.Chamados;
 using FluentAssertions;
 
-namespace AgenteSuporteGlpi.Testes.Nucleo;
+namespace AgenteSuporteGlpi.Testes.Chamados;
 
 public sealed class ResultadoMudancaChamadoTestes
 {
@@ -479,7 +479,7 @@ Expected: PASS.
 Run:
 
 ```powershell
-git add src/AgenteSuporteGlpi tests/AgenteSuporteGlpi.Testes/Nucleo
+git add src/AgenteSuporteGlpi tests/AgenteSuporteGlpi.Testes/Chamados
 git commit -m "feat: detectar mudancas em chamados"
 ```
 
@@ -1405,7 +1405,7 @@ git commit -m "docs: documentar uso local do coletor glpi"
 
 ### Cobertura Da Spec
 
-- Arquitetura Console/Nucleo/ColetaGlpi/Persistencia/Testes: Tasks 1, 2, 4, 5, 6 e 7.
+- Arquitetura app console unico com pastas Chamados/ColetaGlpi/Banco/Configuracao/Execucoes e projeto de testes: Tasks 1, 2, 4, 5, 6 e 7.
 - Coleta GLPI via Playwright somente leitura: Tasks 5 e 6.
 - Coleta lista + detalhes: Tasks 5, 6 e 7.
 - SQLite desde o inicio: Task 4.
