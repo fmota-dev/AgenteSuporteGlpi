@@ -9,11 +9,13 @@ public sealed class ColetorGlpiPlaywright : IColetorGlpi
 {
     private readonly ConfiguracaoGlpi _configuracaoGlpi;
     private readonly ConfiguracaoBrowser _configuracaoBrowser;
+    private readonly SeletoresGlpi _seletores;
 
-    public ColetorGlpiPlaywright(ConfiguracaoGlpi configuracaoGlpi, ConfiguracaoBrowser configuracaoBrowser)
+    public ColetorGlpiPlaywright(ConfiguracaoGlpi configuracaoGlpi, ConfiguracaoBrowser configuracaoBrowser, SeletoresGlpi seletores)
     {
         _configuracaoGlpi = configuracaoGlpi;
         _configuracaoBrowser = configuracaoBrowser;
+        _seletores = seletores;
     }
 
     public async Task<IReadOnlyList<ChamadoColetado>> ColetarListaAsync(CancellationToken ct)
@@ -43,7 +45,7 @@ public sealed class ColetorGlpiPlaywright : IColetorGlpi
             do
             {
                 temProxima = false;
-                var linhas = await page.Locator("table tbody tr").AllAsync();
+                var linhas = await page.Locator(_seletores.LinhaChamado).AllAsync();
 
                 foreach (var linha in linhas)
                 {
@@ -57,7 +59,7 @@ public sealed class ColetorGlpiPlaywright : IColetorGlpi
                         resultados.Add(chamado);
                 }
 
-                var proximo = page.Locator("a:has-text('Próximo')");
+                var proximo = page.Locator(_seletores.LinkProximaPagina);
                 if (await proximo.CountAsync() > 0 && resultados.Count < _configuracaoGlpi.LimiteChamadosPorExecucao)
                 {
                     await proximo.First.ClickAsync();
@@ -83,7 +85,7 @@ public sealed class ColetorGlpiPlaywright : IColetorGlpi
         await page.GotoAsync(chamado.Link.ToString(), new() { WaitUntil = WaitUntilState.NetworkIdle });
         await BloquearFluxosInesperadosAsync(page);
 
-        await page.WaitForSelectorAsync("#ticket-content", new()
+        await page.WaitForSelectorAsync(_seletores.ConteudoChamado, new()
         {
             State = WaitForSelectorState.Visible,
             Timeout = _configuracaoBrowser.TimeoutMilissegundos,
@@ -91,7 +93,7 @@ public sealed class ColetorGlpiPlaywright : IColetorGlpi
 
         await Task.Delay(_configuracaoBrowser.TimeoutEsperaAjaxMilissegundos, ct);
 
-        var html = await page.Locator("#ticket-content").InnerHTMLAsync();
+        var html = await page.Locator(_seletores.ConteudoChamado).InnerHTMLAsync();
         return ParserDetalhesChamado.Converter(html, chamado.Link);
     }
 
@@ -102,14 +104,16 @@ public sealed class ColetorGlpiPlaywright : IColetorGlpi
 
         await page.GotoAsync(_configuracaoGlpi.UrlBase.ToString(), new() { WaitUntil = WaitUntilState.NetworkIdle });
 
+        await BloquearFluxosInesperadosAsync(page);
+
         var campoUsuario = page.GetByLabel("Usuário");
         if (await campoUsuario.CountAsync() == 0)
-            campoUsuario = page.Locator("input[name='login_name']");
+            campoUsuario = page.Locator(_seletores.CampoUsuario);
         await campoUsuario.FillAsync(_configuracaoGlpi.UsuarioLogin);
 
         var campoSenha = page.GetByLabel("Senha");
         if (await campoSenha.CountAsync() == 0)
-            campoSenha = page.Locator("input[name='login_password']");
+            campoSenha = page.Locator(_seletores.CampoSenha);
         await campoSenha.FillAsync(_configuracaoGlpi.SenhaLogin);
 
         await page.GetByRole(AriaRole.Button, new() { Name = "Entrar" }).ClickAsync();
