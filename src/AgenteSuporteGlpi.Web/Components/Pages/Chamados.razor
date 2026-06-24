@@ -23,17 +23,21 @@
             <span class="text-slate-900 font-medium">#@_detalhe.Numero</span>
         </nav>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div class="md:col-span-2 bg-white rounded-2xl shadow-sm p-5">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 class="text-xl font-bold text-slate-900">@_detalhe.Titulo</h2>
-                    </div>
-                    <a href="@_detalhe.Link" target="_blank" class="inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-xl transition">
-                        <span class="material-symbols-rounded text-base">open_in_new</span>
-                        GLPI
-                    </a>
-                </div>
+        <div class="flex items-center gap-1 flex-wrap mb-5">
+            <a href="@_detalhe.Link" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition mr-2">
+                <span class="material-symbols-rounded text-sm">open_in_new</span>
+                GLPI
+            </a>
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100">
+                <span class="font-bold @CorConfianca(_detalhe.Confianca)">@_detalhe.Sistema</span>
+                <span class="text-slate-400">·</span>
+                <span class="text-slate-600">@_detalhe.Confianca (@_detalhe.Pontuacao pts)</span>
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <div class="bg-white rounded-2xl shadow-sm p-5">
+                <h2 class="text-lg font-bold text-slate-900 mb-4">@_detalhe.Titulo</h2>
                 <dl class="grid grid-cols-2 gap-4 text-sm">
                     <div><dt class="text-slate-500 text-xs uppercase">Status</dt><dd class="mt-1"><StatusBadge Status="@_detalhe.Status" /></dd></div>
                     <div><dt class="text-slate-500 text-xs uppercase">Prioridade</dt><dd class="mt-1 font-medium">@_detalhe.Prioridade</dd></div>
@@ -46,43 +50,69 @@
                 </dl>
             </div>
 
-            <div class="space-y-5">
-                <div class="bg-white rounded-2xl shadow-sm p-5">
-                    <h3 class="text-sm font-semibold text-slate-500 uppercase mb-3">Identificacao</h3>
+            <div class="bg-white rounded-2xl shadow-sm p-5">
+                <h3 class="text-sm font-semibold text-slate-500 uppercase mb-3">Identificacao</h3>
+                <div class="flex items-center gap-2 mb-2">
                     <p class="text-lg font-bold @CorConfianca(_detalhe.Confianca)">@_detalhe.Sistema</p>
-                    <p class="text-sm text-slate-500">@_detalhe.Confianca (@_detalhe.Pontuacao pts)</p>
-                    <p class="text-xs text-slate-400 mt-1">Termos: @_detalhe.TermosEncontrados</p>
+                </div>
+                <p class="text-sm text-slate-500">Confianca: @_detalhe.Confianca — @_detalhe.Pontuacao pontos</p>
+                <p class="text-xs text-slate-400 mt-2">Termos que acionaram: @_detalhe.TermosEncontrados</p>
+            </div>
+        </div>
+
+        @if (_detalhe.ResumoTecnicoIa is not null)
+        {
+            <div class="bg-gradient-to-br from-blue-50 to-white rounded-2xl shadow-sm border border-blue-100 p-6 mb-5">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="material-symbols-rounded text-blue-600">psychology</span>
+                    <h3 class="text-base font-bold text-blue-800 uppercase tracking-wide">Analise IA</h3>
                 </div>
 
-                @if (_detalhe.ResumoTecnicoIa is not null)
+                <div class="bg-white rounded-xl p-5 mb-4 shadow-inner">
+                    <p class="text-sm font-semibold text-slate-500 uppercase mb-2">Resumo Tecnico</p>
+                    <p class="text-base text-slate-800 leading-relaxed">@_detalhe.ResumoTecnicoIa</p>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_detalhe.PerguntasIa))
                 {
-                    <div class="bg-white rounded-2xl shadow-sm p-5">
-                        <h3 class="text-sm font-semibold text-slate-500 uppercase mb-3">Analise IA</h3>
-                        <p class="text-sm text-slate-700 mb-3">@_detalhe.ResumoTecnicoIa</p>
-                        @if (!string.IsNullOrWhiteSpace(_detalhe.PerguntasIa))
-                        {
-                            <p class="text-xs font-semibold text-slate-500 uppercase mb-1">Perguntas</p>
-                            <ul class="text-xs text-slate-600 list-disc list-inside space-y-0.5 mb-3">
-                                @foreach (var p in _detalhe.PerguntasIa.Split("|||", StringSplitOptions.RemoveEmptyEntries))
-                                {
-                                    <li>@p.Trim()</li>
-                                }
-                            </ul>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(_detalhe.ProximosPassosIa))
-                        {
-                            <p class="text-xs font-semibold text-slate-500 uppercase mb-1">Proximos Passos</p>
-                            <ul class="text-xs text-slate-600 list-disc list-inside space-y-0.5">
-                                @foreach (var p in _detalhe.ProximosPassosIa.Split("|||", StringSplitOptions.RemoveEmptyEntries))
-                                {
-                                    <li>@p.Trim()</li>
-                                }
-                            </ul>
-                        }
+                    <div class="bg-white rounded-xl p-5 mb-4 shadow-inner">
+                        <p class="text-sm font-semibold text-slate-500 uppercase mb-3">Perguntas ao Solicitante</p>
+                        <ul class="space-y-2">
+                            @foreach (var p in _detalhe.PerguntasIa.Split("|||", StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                <li class="flex items-start gap-2 text-sm text-slate-700">
+                                    <span class="material-symbols-rounded text-amber-500 text-base mt-0.5">help</span>
+                                    <span>@p.Trim()</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_detalhe.ProximosPassosIa))
+                {
+                    <div class="bg-white rounded-xl p-5 shadow-inner">
+                        <p class="text-sm font-semibold text-slate-500 uppercase mb-3">Proximos Passos</p>
+                        <ul class="space-y-2">
+                            @foreach (var p in _detalhe.ProximosPassosIa.Split("|||", StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                <li class="flex items-start gap-2 text-sm text-slate-700">
+                                    <span class="material-symbols-rounded text-emerald-500 text-base mt-0.5">arrow_forward</span>
+                                    <span>@p.Trim()</span>
+                                </li>
+                            }
+                        </ul>
                     </div>
                 }
             </div>
-        </div>
+        }
+        else
+        {
+            <div class="bg-slate-50 rounded-2xl p-6 text-center mb-5">
+                <span class="material-symbols-rounded text-3xl text-slate-300 mb-2 block">psychology</span>
+                <p class="text-sm text-slate-500">Analise IA nao realizada. Execute <code class="text-xs bg-slate-200 px-1.5 py-0.5 rounded">dotnet run -- --analisar</code></p>
+            </div>
+        }
     }
 }
 else
