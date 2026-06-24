@@ -7,6 +7,7 @@ using AgenteSuporteGlpi.IA;
 using AgenteSuporteGlpi.Sistemas;
 using AgenteSuporteGlpi.SqlServer;
 using AgenteSuporteGlpi.ColetaGlpi;
+using System.Text.Json;
 using ConsultorSQLServer.Security;
 using ConsultorSQLServer.Services;
 using Microsoft.Extensions.Configuration;
@@ -186,7 +187,7 @@ internal sealed partial class Program : IHostedService
                     chamado.Descricao ?? string.Empty,
                     _sistemas);
 
-                var contextoBanco = await EnriquecerContextoBancoAsync(resultado, cancellationToken);
+                var contextoBanco = await EnriquecerContextoBancoAsync(resultado, execucaoId, cancellationToken);
 
                 var contexto = new ContextoAnaliseChamado
                 {
@@ -229,7 +230,7 @@ internal sealed partial class Program : IHostedService
         Console.WriteLine($"  Com erro     : {comErro}");
     }
 
-    private async Task<string?> EnriquecerContextoBancoAsync(ResultadoIdentificacaoSistema resultado, CancellationToken ct)
+    private async Task<string?> EnriquecerContextoBancoAsync(ResultadoIdentificacaoSistema resultado, long? execucaoId, CancellationToken ct)
     {
         if (resultado.Confianca == NivelConfianca.NaoIdentificado || resultado.Sistema?.Bancos is null)
             return null;
@@ -240,13 +241,90 @@ internal sealed partial class Program : IHostedService
 
         try
         {
-            var mapeamento = await _consultaSql.MapearBancoAsync(alias, string.Empty, ct);
-            return $"Alias: {alias}\n{mapeamento}";
+            var jsonBancos = await _consultaSql.ListarBancosAsync(alias, ct);
+            var nomeBanco = ResolverBancoPorNomeSistema(jsonBancos, resultado.Sistema.Nome);
+
+            if (string.IsNullOrWhiteSpace(nomeBanco))
+            {
+                await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "SQL Server",
+                    $"Nenhum banco compatível com '{resultado.Sistema.Nome}' encontrado em {alias}", null, ct);
+                return null;
+            }
+
+            await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "SQL Server",
+                $"Banco '{nomeBanco}' mapeado para '{resultado.Sistema.Nome}' em {alias}", null, ct);
+
+            var mapeamento = await _consultaSql.MapearBancoAsync(alias, nomeBanco, ct);
+            return $"Alias: {alias}\nBanco: {nomeBanco}\n{mapeamento}";
+        }
+        catch (Exception ex)
+        {
+            await _repositorio.RegistrarEventoAsync(execucaoId, "Aviso", "SQL Server",
+                $"Falha ao consultar SQL Server {alias}: {ex.Message}", null, ct);
+            return null;
+        }
+    }
+
+    private static string? ResolverBancoPorNomeSistema(string jsonBancos, string nomeSistema)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(jsonBancos);
+            if (!doc.RootElement.TryGetProperty("dados", out var dados))
+                return null;
+            if (!dados.TryGetProperty("bancos", out var bancos))
+                return null;
+
+            var termos = ExtrairTermosSistema(nomeSistema);
+
+            string? melhorMatch = null;
+            var melhorPontuacao = 0;
+
+            foreach (var banco in bancos.EnumerateArray())
+            {
+                var nome = banco.GetProperty("name").GetString();
+                if (string.IsNullOrWhiteSpace(nome))
+                    continue;
+
+                var nomeNormalizado = RemoverPrefixoBanco(nome);
+                var pontuacao = CalcularMatch(nomeNormalizado, termos);
+
+                if (pontuacao > melhorPontuacao)
+                {
+                    melhorPontuacao = pontuacao;
+                    melhorMatch = nome;
+                }
+            }
+
+            return melhorPontuacao > 0 ? melhorMatch : null;
         }
         catch
         {
             return null;
         }
+    }
+
+    private static string[] ExtrairTermosSistema(string nomeSistema)
+    {
+        return nomeSistema
+            .Replace("Sistema de", "")
+            .Replace("Sistema", "")
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(t => t.Length > 2)
+            .Select(t => t.ToUpperInvariant())
+            .ToArray();
+    }
+
+    private static string RemoverPrefixoBanco(string nomeBanco)
+    {
+        var idx = nomeBanco.IndexOf('_');
+        return idx >= 0 ? nomeBanco[(idx + 1)..] : nomeBanco;
+    }
+
+    private static int CalcularMatch(string nomeBanco, string[] termos)
+    {
+        var upper = nomeBanco.ToUpperInvariant();
+        return termos.Count(termo => upper.Contains(termo));
     }
 
     private static void SalvarLogAuditoriaIa(int numeroChamado, ResultadoIdentificacaoSistema identificacao, ResultadoAnaliseIa analise)
