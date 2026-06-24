@@ -2,6 +2,7 @@
 using AgenteSuporteGlpi.Chamados;
 using AgenteSuporteGlpi.Configuracao;
 using AgenteSuporteGlpi.Contratos;
+using AgenteSuporteGlpi.Sistemas;
 using AgenteSuporteGlpi.ColetaGlpi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,19 +17,22 @@ internal sealed partial class Program : IHostedService
     private readonly IRepositorioChamados _repositorio;
     private readonly InicializadorBanco _dbInit;
     private readonly ConfiguracaoGlpi _configuracaoGlpi;
+    private readonly IReadOnlyList<SistemaConfigurado> _sistemas;
 
     public Program(
         IHostApplicationLifetime lifetime,
         IColetorGlpi coletor,
         IRepositorioChamados repositorio,
         InicializadorBanco dbInit,
-        ConfiguracaoGlpi configuracaoGlpi)
+        ConfiguracaoGlpi configuracaoGlpi,
+        IReadOnlyList<SistemaConfigurado> sistemas)
     {
         _lifetime = lifetime;
         _coletor = coletor;
         _repositorio = repositorio;
         _dbInit = dbInit;
         _configuracaoGlpi = configuracaoGlpi;
+        _sistemas = sistemas;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -65,15 +69,21 @@ internal sealed partial class Program : IHostedService
                     if (resultado.FoiAlterado)
                     {
                         await _repositorio.SalvarChamadoAsync(detalhes, hash, cancellationToken);
+
+                        var identificacao = IdentificadorSistemaPorPalavrasChave.Identificar(
+                            detalhes.Titulo,
+                            detalhes.Descricao ?? string.Empty,
+                            _sistemas);
+
                         if (resultado.EhNovo)
                         {
                             novos++;
-                            Console.WriteLine($"  [#{chamado.Numero}] NOVO - {chamado.Titulo}");
+                            Console.WriteLine($"  [#{chamado.Numero}] NOVO - {chamado.Titulo} -> {FormatarIdentificacao(identificacao)}");
                         }
                         else
                         {
                             alterados++;
-                            Console.WriteLine($"  [#{chamado.Numero}] ALTERADO - {chamado.Titulo}");
+                            Console.WriteLine($"  [#{chamado.Numero}] ALTERADO - {chamado.Titulo} -> {FormatarIdentificacao(identificacao)}");
                         }
                     }
                     else
@@ -111,6 +121,14 @@ internal sealed partial class Program : IHostedService
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
+    private static string FormatarIdentificacao(ResultadoIdentificacaoSistema resultado)
+    {
+        if (resultado.Confianca == NivelConfianca.NaoIdentificado)
+            return "sistema nao identificado";
+
+        return $"{(resultado.Sistema?.Nome ?? "?")} ({resultado.Confianca}, {resultado.Pontuacao}pts)";
+    }
+
     private static async Task Main(string[] args)
     {
         var host = Host.CreateDefaultBuilder(args)
@@ -138,6 +156,8 @@ internal sealed partial class Program : IHostedService
                 services.AddSingleton(configuracaoGlpi);
                 services.AddSingleton(configuracaoBrowser);
                 services.AddSingleton(configuracaoBanco);
+                var sistemas = ConfiguracaoSistemas.Carregar(config);
+                services.AddSingleton(sistemas);
                 services.AddSingleton(seletores);
                 services.AddSingleton<InicializadorBanco>(_ => new InicializadorBanco(configuracaoBanco.ConnectionString));
                 services.AddSingleton<IRepositorioChamados, RepositorioChamados>(_ =>
