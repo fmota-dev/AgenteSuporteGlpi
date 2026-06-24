@@ -255,9 +255,9 @@ internal sealed partial class Program : IHostedService
 
                     foreach (var b in encontrados)
                     {
-                        if (b.EhDev && dev is null)
+                        if (b.EhDev && (dev is null || b.Pontuacao > dev.Pontuacao))
                             dev = b;
-                        else if (!b.EhDev && prod is null)
+                        else if (!b.EhDev && (prod is null || b.Pontuacao > prod.Pontuacao))
                             prod = b;
                     }
                 }
@@ -342,7 +342,7 @@ internal sealed partial class Program : IHostedService
                 if (string.IsNullOrWhiteSpace(nome))
                     continue;
 
-                var nomeNormalizado = RemoverPrefixoBanco(nome);
+                var nomeNormalizado = RemoverSufixoAmbiente(RemoverPrefixoBanco(nome));
                 var pontuacao = CalcularMatch(nomeNormalizado, termos);
 
                 if (pontuacao > 0)
@@ -386,6 +386,16 @@ internal sealed partial class Program : IHostedService
     {
         var idx = nomeBanco.IndexOf('_');
         return idx >= 0 ? nomeBanco[(idx + 1)..] : nomeBanco;
+    }
+
+    private static string RemoverSufixoAmbiente(string nome)
+    {
+        var upper = nome.ToUpperInvariant();
+        if (upper.EndsWith("_DEV"))
+            return nome[..^"_DEV".Length];
+        if (upper.EndsWith("_HOMOLOG"))
+            return nome[..^"_HOMOLOG".Length];
+        return nome;
     }
 
     private static int CalcularMatch(string nomeBanco, string[] termos)
