@@ -1,3 +1,4 @@
+using AgenteSuporteGlpi.Sistemas;
 using Microsoft.Data.Sqlite;
 
 namespace AgenteSuporteGlpi.Chamados;
@@ -76,5 +77,25 @@ public sealed class RepositorioChamados(string connectionString) : IRepositorioC
         await inserirColeta.ExecuteNonQueryAsync(cancellationToken);
 
         await transacao.CommitAsync(cancellationToken);
+    }
+
+    public async Task PersistirIdentificacaoAsync(int numeroChamado, ResultadoIdentificacaoSistema resultado, CancellationToken cancellationToken)
+    {
+        await using var conexao = new SqliteConnection(connectionString);
+        await conexao.OpenAsync(cancellationToken);
+
+        var comando = conexao.CreateCommand();
+        comando.CommandText = """
+            INSERT INTO IdentificacoesSistema (NumeroChamado, Sistema, NivelConfianca, Pontuacao, TermosEncontrados, Motivo, DataIdentificacao)
+            VALUES ($numeroChamado, $sistema, $nivelConfianca, $pontuacao, $termos, $motivo, $dataIdentificacao)
+            """;
+        comando.Parameters.AddWithValue("$numeroChamado", numeroChamado);
+        comando.Parameters.AddWithValue("$sistema", resultado.Sistema?.Nome ?? "NaoIdentificado");
+        comando.Parameters.AddWithValue("$nivelConfianca", resultado.Confianca.ToString());
+        comando.Parameters.AddWithValue("$pontuacao", resultado.Pontuacao);
+        comando.Parameters.AddWithValue("$termos", string.Join("; ", resultado.TermosEncontrados));
+        comando.Parameters.AddWithValue("$motivo", resultado.Motivo);
+        comando.Parameters.AddWithValue("$dataIdentificacao", DateTimeOffset.UtcNow.ToString("O"));
+        await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 }

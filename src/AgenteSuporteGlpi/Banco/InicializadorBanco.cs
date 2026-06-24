@@ -55,6 +55,18 @@ public sealed class InicializadorBanco(string connectionString)
                 Mensagem TEXT NOT NULL,
                 NumeroChamado INTEGER NULL
             );
+
+            CREATE TABLE IF NOT EXISTS IdentificacoesSistema (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                NumeroChamado INTEGER NOT NULL,
+                Sistema TEXT NOT NULL,
+                NivelConfianca TEXT NOT NULL,
+                Pontuacao INTEGER NOT NULL DEFAULT 0,
+                TermosEncontrados TEXT NOT NULL,
+                Motivo TEXT NOT NULL,
+                DataIdentificacao TEXT NOT NULL,
+                FOREIGN KEY (NumeroChamado) REFERENCES Chamados(Numero)
+            );
             """;
 
         await comando.ExecuteNonQueryAsync(cancellationToken);

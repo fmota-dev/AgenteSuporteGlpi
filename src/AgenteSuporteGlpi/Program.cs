@@ -75,6 +75,8 @@ internal sealed partial class Program : IHostedService
                             detalhes.Descricao ?? string.Empty,
                             _sistemas);
 
+                        await _repositorio.PersistirIdentificacaoAsync(chamado.Numero, identificacao, cancellationToken);
+
                         if (resultado.EhNovo)
                         {
                             novos++;
