@@ -1,0 +1,18 @@
+@page "/not-found"
+@layout AdminLayout
+
+<PageTitle>Página não encontrada</PageTitle>
+
+<div class="flex min-h-screen items-center justify-center px-4">
+    <div class="max-w-xl rounded-[2rem] border border-slate-200 bg-white px-8 py-12 text-center shadow-xl">
+        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-[#F47920]">404</p>
+        <h1 class="mt-4 text-4xl font-extrabold text-slate-900">Página não encontrada</h1>
+        <p class="mt-4 text-sm leading-7 text-slate-500">
+            O endereço solicitado não existe ou foi movido. Volte para o painel inicial do Agente Suporte GLPI.
+        </p>
+        <a href="/dashboard"
+           class="mt-8 inline-flex items-center justify-center rounded-2xl bg-[#0057A8] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#003E7A]">
+            Voltar ao dashboard
+        </a>
+    </div>
+</div>

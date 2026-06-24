@@ -1,0 +1,77 @@
+:root {
+    --senac-azul: #0057A8;
+    --senac-azul-escuro: #003E7A;
+    --senac-azul-claro: #EAF2FB;
+    --senac-laranja: #F47920;
+    --senac-laranja-escuro: #D4660F;
+    --cinza-100: #F3F4F6;
+    --cinza-200: #E5E7EB;
+    --cinza-500: #6B7280;
+    --cinza-900: #111827;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+    color: var(--cinza-900);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+a {
+    text-decoration: none;
+}
+
+.nav-icon {
+    display: inline-flex;
+    width: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.material-symbols-rounded {
+    font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f8fafc;
+}
+
+#blazor-error-ui {
+    background: #b91c1c;
+    color: white;
+    bottom: 0;
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.25);
+    display: none;
+    left: 0;
+    padding: 0.85rem 1rem;
+    position: fixed;
+    right: 0;
+    z-index: 9999;
+}
+
+#blazor-error-ui .dismiss,
+#blazor-error-ui .reload {
+    color: white;
+    cursor: pointer;
+    margin-left: 1rem;
+}

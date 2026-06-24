@@ -1,0 +1,180 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager Navegacao
+
+<div class="min-h-screen bg-slate-100">
+    @if (_menuMovelAberto)
+    {
+        <button type="button"
+                class="fixed inset-0 z-30 bg-slate-950/45 lg:hidden"
+                @onclick="FecharMenuMovelAsync"
+                aria-label="Fechar menu"></button>
+    }
+
+    <aside class="@ObterClasseBarraLateral()">
+        <div class="@ObterClasseLarguraBarraLateral()">
+            <div class="border-b border-white/10 px-4 py-5">
+                @if (_menuRecolhido)
+                {
+                    <div class="hidden lg:flex lg:flex-col lg:items-center lg:gap-4">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
+                            <img src="/img/logos/logo-senac-branca.png"
+                                 alt="Agente Suporte GLPI"
+                                 class="h-7 w-auto max-w-[2.2rem] object-contain"
+                                 loading="eager" />
+                        </div>
+                        <button type="button"
+                                class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 text-white transition hover:bg-white/10"
+                                @onclick="AlternarMenuDesktop"
+                                aria-label="Expandir menu">
+                            <span class="material-symbols-rounded text-[20px]" aria-hidden="true">chevron_right</span>
+                        </button>
+                    </div>
+                    <div class="flex items-start justify-between gap-3 lg:hidden">
+                        <div class="min-w-0 flex-1">
+                            <img src="/img/logos/logo-senac-branca.png" alt="Agente Suporte GLPI" class="h-12 w-auto object-contain" loading="eager" />
+                        </div>
+                        <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 text-white transition hover:bg-white/10"
+                                @onclick="FecharMenuMovelAsync" aria-label="Fechar menu">
+                            <span class="material-symbols-rounded text-[20px]" aria-hidden="true">close</span>
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                            <img src="/img/logos/logo-senac-branca.png" alt="Agente Suporte GLPI" class="h-12 w-auto object-contain" loading="eager" />
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="hidden h-10 w-10 items-center justify-center rounded-xl border border-white/15 text-white transition hover:bg-white/10 lg:inline-flex"
+                                    @onclick="AlternarMenuDesktop" aria-label="Recolher menu">
+                                <span class="material-symbols-rounded text-[20px]" aria-hidden="true">chevron_left</span>
+                            </button>
+                            <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 text-white transition hover:bg-white/10 lg:hidden"
+                                    @onclick="FecharMenuMovelAsync" aria-label="Fechar menu">
+                                <span class="material-symbols-rounded text-[20px]" aria-hidden="true">close</span>
+                            </button>
+                        </div>
+                    </div>
+                }
+                @if (!_menuRecolhido)
+                {
+                    <div class="mt-4">
+                        <p class="text-sm font-medium text-blue-100">Agente Suporte GLPI</p>
+                        <p class="text-xs text-blue-200/70">Dashboard de chamados</p>
+                    </div>
+                }
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-4 py-5">
+                <NavMenu MenuRecolhido="_menuRecolhido" AoSelecionarItem="FecharMenuMovelAsync" />
+            </div>
+        </div>
+    </aside>
+
+    <div class="@ObterClasseConteudo()">
+        <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+            <div class="flex flex-col gap-4 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+                <div class="flex items-center gap-3">
+                    <button type="button"
+                            class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-100 lg:hidden"
+                            @onclick="AlternarMenuMovelAsync" aria-label="Abrir menu">
+                        <span class="material-symbols-rounded text-[20px]" aria-hidden="true">menu</span>
+                    </button>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.25em] text-[#F47920]">Sistema interno</p>
+                        <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">@_tituloPagina</h1>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="w-full max-w-full flex-1 px-4 py-5 sm:px-5 sm:py-6 lg:px-8">
+            @Body
+        </main>
+    </div>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    Ocorreu um erro inesperado.
+    <a href="." class="reload">Recarregar</a>
+    <span class="dismiss material-symbols-rounded" aria-hidden="true">close</span>
+</div>
+
+@code {
+    private string _tituloPagina = "Agente Suporte GLPI";
+    private bool _menuRecolhido;
+    private bool _menuMovelAberto;
+
+    protected override void OnInitialized()
+    {
+        Navegacao.LocationChanged += AoMudarRota;
+    }
+
+    protected override void OnParametersSet()
+    {
+        _tituloPagina = ResolverTituloPagina(Navegacao.Uri);
+        _menuMovelAberto = false;
+    }
+
+    public void Dispose()
+    {
+        Navegacao.LocationChanged -= AoMudarRota;
+    }
+
+    private Task AlternarMenuMovelAsync()
+    {
+        _menuMovelAberto = !_menuMovelAberto;
+        return Task.CompletedTask;
+    }
+
+    private Task FecharMenuMovelAsync(MouseEventArgs e)
+    {
+        _menuMovelAberto = false;
+        return Task.CompletedTask;
+    }
+
+    private async void AoMudarRota(object? sender, EventArgs e)
+    {
+        _menuMovelAberto = false;
+        _tituloPagina = ResolverTituloPagina(Navegacao.Uri);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void AlternarMenuDesktop()
+    {
+        _menuRecolhido = !_menuRecolhido;
+    }
+
+    private static string ResolverTituloPagina(string uri)
+    {
+        if (uri.Contains("/chamados/") && int.TryParse(uri.Split("/chamados/").Last(), out var num))
+            return $"Chamado #{num}";
+        if (uri.Contains("/chamados")) return "Chamados";
+        if (uri.Contains("/analises")) return "Analises IA";
+        return "Dashboard";
+    }
+
+    private string ObterClasseBarraLateral()
+    {
+        var baseClasse = "fixed inset-y-0 left-0 z-40 flex flex-col bg-gradient-to-b from-[#003E7A] to-[#002650] transition-all duration-300";
+        return _menuMovelAberto
+            ? $"{baseClasse} translate-x-0 lg:translate-x-0"
+            : $"{baseClasse} -translate-x-full lg:translate-x-0";
+    }
+
+    private string ObterClasseLarguraBarraLateral()
+    {
+        return _menuRecolhido
+            ? "flex h-full w-72 flex-col pt-0 lg:w-24"
+            : "flex h-full w-72 flex-col pt-0";
+    }
+
+    private string ObterClasseConteudo()
+    {
+        return _menuRecolhido
+            ? "flex min-h-screen flex-col transition-all duration-300 lg:ml-24"
+            : "flex min-h-screen flex-col transition-all duration-300 lg:ml-72";
+    }
+}

@@ -1,0 +1,66 @@
+@{
+    var itensBreadcrumb = Breadcrumbs?.ToArray() ?? Array.Empty<string>();
+}
+
+@if (itensBreadcrumb.Length > 0)
+{
+    <div class="mb-2 flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-slate-400">
+        @for (var indice = 0; indice < itensBreadcrumb.Length; indice++)
+        {
+            var item = itensBreadcrumb[indice];
+            var ehUltimo = indice == itensBreadcrumb.Length - 1;
+            var rota = ObterRotaBreadcrumb(item);
+
+            @if (!ehUltimo && !string.IsNullOrWhiteSpace(rota))
+            {
+                <a href="@rota"
+                   class="transition hover:text-[#0057A8] hover:underline focus:outline-none focus-visible:text-[#0057A8] focus-visible:underline">
+                    @item
+                </a>
+            }
+            else
+            {
+                <span class="@(ehUltimo ? "text-slate-500" : string.Empty)">@item</span>
+            }
+
+            @if (!ehUltimo)
+            {
+                <span>/</span>
+            }
+        }
+    </div>
+}
+
+<div class="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+        <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">@Titulo</h2>
+        @if (!string.IsNullOrWhiteSpace(Subtitulo))
+        {
+            <p class="mt-2 max-w-3xl text-sm text-slate-500">@Subtitulo</p>
+        }
+    </div>
+
+    @if (Actions is not null)
+    {
+        <div class="flex flex-wrap items-center gap-3">
+            @Actions
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Titulo { get; set; } = string.Empty;
+    [Parameter] public string Subtitulo { get; set; } = string.Empty;
+    [Parameter] public IEnumerable<string>? Breadcrumbs { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+
+    private static string? ObterRotaBreadcrumb(string texto) => texto switch
+    {
+        "Início" => "/dashboard",
+        "Dashboard" => "/dashboard",
+        "Acessos" => "/acessos",
+        "Usuários" => "/acessos/usuarios",
+        "Perfis" => "/acessos/perfis",
+        _ => null
+    };
+}

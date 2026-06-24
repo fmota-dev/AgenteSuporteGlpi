@@ -1,0 +1,112 @@
+@page "/dashboard"
+@page "/"
+@rendermode InteractiveServer
+@inject ServicoDashboard Servico
+@inject NavigationManager Nav
+
+<PageTitle>Dashboard — Agente Suporte GLPI</PageTitle>
+<PageHeader Titulo="Dashboard" />
+
+@if (_resumo is null)
+{
+    <LoadingSpinner />
+}
+else
+{
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
+            <span class="text-3xl font-extrabold text-blue-700">@_resumo.TotalChamados</span>
+            <p class="text-sm text-slate-500 mt-1">Chamados</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
+            <span class="text-3xl font-extrabold text-emerald-600">@_resumo.TotalAnalisados</span>
+            <p class="text-sm text-slate-500 mt-1">Analisados IA</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
+            <span class="text-3xl font-extrabold text-cyan-600">@_resumo.TotalSistemasIdentificados</span>
+            <p class="text-sm text-slate-500 mt-1">Sistemas</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
+            <span class="text-3xl font-extrabold text-amber-500">@_resumo.AltaConfianca</span>
+            <p class="text-sm text-slate-500 mt-1">Alta Confianca</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-2xl shadow-sm p-5">
+            <h3 class="text-lg font-semibold text-slate-800 mb-3">Chamados por Sistema</h3>
+            <ApexChart TItem="ChamadoPorSistema" Title="">
+                <ApexPointSeries TItem="ChamadoPorSistema"
+                                 Items="_resumo.ChamadosPorSistema"
+                                 Name="Chamados"
+                                 SeriesType="SeriesType.Bar"
+                                 XValue="e => e.Sistema"
+                                 YValue="e => e.Quantidade" />
+            </ApexChart>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-5">
+            <h3 class="text-lg font-semibold text-slate-800 mb-3">Confianca da Identificacao</h3>
+            <ApexChart TItem="ConfiancaPorNivel" Title="">
+                <ApexPointSeries TItem="ConfiancaPorNivel"
+                                 Items="_resumo.ConfiancaPorNivel"
+                                 Name="Confianca"
+                                 SeriesType="SeriesType.Donut"
+                                 XValue="e => e.Nivel"
+                                 YValue="e => e.Quantidade" />
+            </ApexChart>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-slate-800">Chamados Recentes</h3>
+            <a href="/chamados" class="text-sm text-blue-700 hover:underline font-medium">Ver todos</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-slate-50 text-slate-600 uppercase text-xs">
+                    <tr>
+                        <th class="px-5 py-3">#</th>
+                        <th class="px-5 py-3">Titulo</th>
+                        <th class="px-5 py-3">Status</th>
+                        <th class="px-5 py-3">Sistema</th>
+                        <th class="px-5 py-3">Confianca</th>
+                        <th class="px-5 py-3">Data</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var c in _resumo.ChamadosRecentes)
+                    {
+                        <tr class="hover:bg-slate-50 cursor-pointer transition" @onclick="() => IrChamado(c.Numero)">
+                            <td class="px-5 py-3">
+                                <a href="@c.Link" target="_blank" class="text-blue-700 hover:underline font-medium" @onclick:stopPropagation="true">#@c.Numero</a>
+                            </td>
+                            <td class="px-5 py-3 max-w-xs truncate">@c.Titulo</td>
+                            <td class="px-5 py-3"><StatusBadge Status="@c.Status" /></td>
+                            <td class="px-5 py-3">@c.Sistema</td>
+                            <td class="px-5 py-3">@c.Confianca</td>
+                            <td class="px-5 py-3 whitespace-nowrap">@FormatarData(c.Data)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private ResumoDashboard? _resumo;
+
+    protected override async Task OnInitializedAsync()
+        => _resumo = await Servico.ObterResumoAsync();
+
+    private void IrChamado(int numero)
+        => Nav.NavigateTo($"/chamados/{numero}");
+
+    private static string FormatarData(string dataIso)
+    {
+        if (DateTimeOffset.TryParse(dataIso, out var d))
+            return d.LocalDateTime.ToString("dd/MM/yyyy HH:mm");
+        return dataIso;
+    }
+}

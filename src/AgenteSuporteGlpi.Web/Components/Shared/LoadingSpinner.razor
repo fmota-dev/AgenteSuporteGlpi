@@ -1,0 +1,12 @@
+<div class="flex items-center justify-center gap-3 text-sm text-slate-500">
+    <svg class="@($"animate-spin text-[#0057A8] {Tamanho}")" viewBox="0 0 24 24" fill="none">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+    </svg>
+    <span>@Texto</span>
+</div>
+
+@code {
+    [Parameter] public string Texto { get; set; } = "Carregando...";
+    [Parameter] public string Tamanho { get; set; } = "h-5 w-5";
+}

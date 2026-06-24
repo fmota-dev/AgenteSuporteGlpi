@@ -1,0 +1,77 @@
+@page "/analises"
+@rendermode InteractiveServer
+@inject ServicoDashboard Dashboard
+@inject NavigationManager Nav
+
+<PageTitle>Analises IA — Agente Suporte GLPI</PageTitle>
+<PageHeader Titulo="Analises IA" />
+
+@if (_analises is null)
+{
+    <LoadingSpinner />
+}
+else if (_analises.Count == 0)
+{
+    <div class="bg-white rounded-2xl shadow-sm p-8 text-center">
+        <span class="material-symbols-rounded text-5xl text-slate-300 mb-3">psychology</span>
+        <p class="text-slate-500">Nenhuma analise IA registrada.</p>
+        <p class="text-sm text-slate-400 mt-1">Execute <code class="bg-slate-100 px-2 py-0.5 rounded text-xs">dotnet run --analisar</code> para gerar.</p>
+    </div>
+}
+else
+{
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-slate-50 text-slate-600 uppercase text-xs">
+                    <tr>
+                        <th class="px-5 py-3">#</th>
+                        <th class="px-5 py-3">Titulo</th>
+                        <th class="px-5 py-3">Sistema</th>
+                        <th class="px-5 py-3">Resumo Tecnico</th>
+                        <th class="px-5 py-3">Perguntas</th>
+                        <th class="px-5 py-3">Data</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var a in _analises)
+                    {
+                        <tr class="hover:bg-slate-50 cursor-pointer transition" @onclick="() => IrChamado(a.NumeroChamado)">
+                            <td class="px-5 py-3">
+                                <a href="@a.Link" target="_blank" class="text-blue-700 hover:underline font-medium" @onclick:stopPropagation="true">#@a.NumeroChamado</a>
+                            </td>
+                            <td class="px-5 py-3 max-w-xs truncate">@a.TituloChamado</td>
+                            <td class="px-5 py-3 font-medium">@a.Sistema</td>
+                            <td class="px-5 py-3 max-w-md truncate">@a.ResumoTecnico</td>
+                            <td class="px-5 py-3">@ContarPerguntas(a.PerguntasSolicitante)</td>
+                            <td class="px-5 py-3 whitespace-nowrap">@FormatarData(a.DataAnalise)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private List<AnaliseIaViewModel>? _analises;
+
+    protected override async Task OnInitializedAsync()
+        => _analises = await Dashboard.ListarAnalisesAsync();
+
+    private void IrChamado(int numero)
+        => Nav.NavigateTo($"/chamados/{numero}");
+
+    private static int ContarPerguntas(string perguntas)
+    {
+        if (string.IsNullOrWhiteSpace(perguntas)) return 0;
+        return perguntas.Split("|||", StringSplitOptions.RemoveEmptyEntries).Length;
+    }
+
+    private static string FormatarData(string dataIso)
+    {
+        if (DateTimeOffset.TryParse(dataIso, out var d))
+            return d.LocalDateTime.ToString("dd/MM/yyyy HH:mm");
+        return dataIso;
+    }
+}

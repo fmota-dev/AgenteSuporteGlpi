@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "OpenAI Codex",
+  "classifications": [
+    "Blazor",
+    "Server",
+    "Corporativo",
+    "Dashboard",
+    "Admin"
+  ],
+  "identity": "Senac.Templates.Blazor.Corporativo",
+  "name": "Starter Corporativo Blazor Senac",
+  "shortName": "senac-blazor-corp",
+  "sourceName": "AgenteSuporteGlpi.Web",
+  "preferNameDirectory": true,
+  "defaultName": "Portal.Corporativo",
+  "symbols": {
+    "namespace": {
+      "type": "parameter",
+      "datatype": "text",
+      "defaultValue": "Empresa.Sistema",
+      "replaces": "AgenteSuporteGlpi.Web",
+      "displayName": "Namespace raiz",
+      "description": "Namespace principal do projeto gerado."
+    },
+    "nomeSistema": {
+      "type": "parameter",
+      "datatype": "text",
+      "defaultValue": "Sistema Corporativo",
+      "replaces": "Agente Suporte GLPI",
+      "displayName": "Nome do sistema",
+      "description": "Nome exibido no login, layout e dashboard."
+    },
+    "dominioInicial": {
+      "type": "parameter",
+      "datatype": "text",
+      "defaultValue": "Operacoes",
+      "replaces": "NovoModulo",
+      "displayName": "Domínio inicial",
+      "description": "Domínio usado como referência no scaffold e nos textos iniciais."
+    }
+  },
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "exclude": [
+            "**/[Bb]in/**",
+            "**/[Oo]bj/**"
+          ]
+        }
+      ]
+    }
+  ],
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}
