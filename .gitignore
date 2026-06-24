@@ -16,6 +16,8 @@ coverage/
 # Configuracoes locais e segredos
 appsettings.Local.json
 *.local.json
+mcps/**/appsettings.json
+mcps/**/appsettings.local.json
 .env
 .env.*
 !.env.example
