@@ -1,3 +1,4 @@
+using AgenteSuporteGlpi.IA;
 using AgenteSuporteGlpi.Sistemas;
 using Microsoft.Data.Sqlite;
 
@@ -77,6 +78,89 @@ public sealed class RepositorioChamados(string connectionString) : IRepositorioC
         await inserirColeta.ExecuteNonQueryAsync(cancellationToken);
 
         await transacao.CommitAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<DetalhesChamadoColetado>> ObterChamadosNaoAnalisadosAsync(CancellationToken cancellationToken)
+    {
+        await using var conexao = new SqliteConnection(connectionString);
+        await conexao.OpenAsync(cancellationToken);
+
+        var comando = conexao.CreateCommand();
+        comando.CommandText = """
+            SELECT Numero, TituloAtual, DescricaoColetada, StatusAtual, PrioridadeAtual,
+                   Responsavel, Solicitante, Categoria, DataAbertura, DataUltimaAtualizacao, Link
+            FROM Chamados
+            INNER JOIN (
+                SELECT NumeroChamado, DescricaoColetada
+                FROM ColetasChamado
+                WHERE Id IN (
+                    SELECT MAX(Id)
+                    FROM ColetasChamado
+                    GROUP BY NumeroChamado
+                )
+            ) UltimaColeta ON Chamados.Numero = UltimaColeta.NumeroChamado
+            WHERE AnalisadoPorIa = 0
+            ORDER BY Chamados.Numero
+            """;
+
+        var chamados = new List<DetalhesChamadoColetado>();
+
+        await using var reader = await comando.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var statusStr = reader.GetString(3);
+            Enum.TryParse<StatusChamado>(statusStr, out var status);
+
+            var dataAbertura = DateTimeOffset.Parse(reader.GetString(8));
+            var dataUltima = DateTimeOffset.Parse(reader.GetString(9));
+
+            chamados.Add(new DetalhesChamadoColetado(
+                reader.GetInt32(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                status,
+                reader.GetString(4),
+                reader.IsDBNull(6) ? null : reader.GetString(6),
+                reader.IsDBNull(7) ? null : reader.GetString(7),
+                reader.GetString(5),
+                dataAbertura,
+                dataUltima,
+                new Uri(reader.GetString(10))
+            ));
+        }
+
+        return chamados;
+    }
+
+    public async Task SalvarAnaliseIaAsync(int numeroChamado, ResultadoAnaliseIa analise, CancellationToken cancellationToken)
+    {
+        await using var conexao = new SqliteConnection(connectionString);
+        await conexao.OpenAsync(cancellationToken);
+
+        var comando = conexao.CreateCommand();
+        comando.CommandText = """
+            INSERT INTO AnalisesIa (NumeroChamado, ResumoTecnico, PerguntasSolicitante, ProximosPassos, DataAnalise)
+            VALUES ($numeroChamado, $resumo, $perguntas, $proximosPassos, $dataAnalise)
+            """;
+        comando.Parameters.AddWithValue("$numeroChamado", numeroChamado);
+        comando.Parameters.AddWithValue("$resumo", analise.ResumoTecnico);
+        comando.Parameters.AddWithValue("$perguntas", string.Join("|||", analise.PerguntasSolicitante));
+        comando.Parameters.AddWithValue("$proximosPassos", string.Join("|||", analise.ProximosPassos));
+        comando.Parameters.AddWithValue("$dataAnalise", DateTimeOffset.UtcNow.ToString("O"));
+        await comando.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task MarcarAnalisadoPorIaAsync(int numeroChamado, CancellationToken cancellationToken)
+    {
+        await using var conexao = new SqliteConnection(connectionString);
+        await conexao.OpenAsync(cancellationToken);
+
+        var comando = conexao.CreateCommand();
+        comando.CommandText = """
+            UPDATE Chamados SET AnalisadoPorIa = 1 WHERE Numero = $numero
+            """;
+        comando.Parameters.AddWithValue("$numero", numeroChamado);
+        await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
     public async Task PersistirIdentificacaoAsync(int numeroChamado, ResultadoIdentificacaoSistema resultado, CancellationToken cancellationToken)

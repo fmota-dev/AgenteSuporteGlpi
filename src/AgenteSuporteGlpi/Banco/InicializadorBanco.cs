@@ -67,7 +67,30 @@ public sealed class InicializadorBanco(string connectionString)
                 DataIdentificacao TEXT NOT NULL,
                 FOREIGN KEY (NumeroChamado) REFERENCES Chamados(Numero)
             );
+
+            CREATE TABLE IF NOT EXISTS AnalisesIa (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                NumeroChamado INTEGER NOT NULL,
+                ResumoTecnico TEXT NOT NULL,
+                PerguntasSolicitante TEXT NOT NULL,
+                ProximosPassos TEXT NOT NULL,
+                DataAnalise TEXT NOT NULL,
+                FOREIGN KEY (NumeroChamado) REFERENCES Chamados(Numero)
+            );
             """;
+
+        var alterarChamados = conexao.CreateCommand();
+        alterarChamados.CommandText = """
+            ALTER TABLE Chamados ADD COLUMN AnalisadoPorIa INTEGER NOT NULL DEFAULT 0
+            """;
+
+        try
+        {
+            await alterarChamados.ExecuteNonQueryAsync(cancellationToken);
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 1)
+        {
+        }
 
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }

@@ -21,6 +21,8 @@ internal sealed partial class Program : IHostedService
     private readonly IReadOnlyList<SistemaConfigurado> _sistemas;
     private readonly AnalisadorChamado _analisador;
 
+    private static bool _modoAnalise;
+
     public Program(
         IHostApplicationLifetime lifetime,
         IColetorGlpi coletor,
@@ -43,99 +45,10 @@ internal sealed partial class Program : IHostedService
     {
         try
         {
-            Console.WriteLine("=== Iniciando pipeline de coleta GLPI ===");
-
-            await _dbInit.InicializarAsync(cancellationToken);
-            Console.WriteLine("Banco inicializado.");
-
-            var chamados = await _coletor.ColetarListaAsync(cancellationToken);
-            Console.WriteLine($"Chamados encontrados via GLPI: {chamados.Count}");
-
-            var elegiveis = FiltroChamados.FiltrarElegiveis(chamados, _configuracaoGlpi.Responsavel);
-            Console.WriteLine($"Chamados elegiveis apos filtro: {elegiveis.Count}");
-
-            var novos = 0;
-            var alterados = 0;
-            var ignorados = 0;
-            var comErro = 0;
-
-            foreach (var chamado in elegiveis)
-            {
-                try
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var detalhes = await _coletor.ColetarDetalhesAsync(chamado, cancellationToken);
-                    var hash = HashConteudoChamado.Calcular(detalhes.Descricao);
-                    var hashAnterior = await _repositorio.ObterUltimoHashAsync(chamado.Numero, cancellationToken);
-                    var resultado = ResultadoMudancaChamado.Avaliar(hashAnterior, hash);
-
-                    if (resultado.FoiAlterado)
-                    {
-                        await _repositorio.SalvarChamadoAsync(detalhes, hash, cancellationToken);
-
-                        var identificacao = IdentificadorSistemaPorPalavrasChave.Identificar(
-                            detalhes.Titulo,
-                            detalhes.Descricao ?? string.Empty,
-                            _sistemas);
-
-                        await _repositorio.PersistirIdentificacaoAsync(chamado.Numero, identificacao, cancellationToken);
-
-                        var contexto = new ContextoAnaliseChamado
-                        {
-                            Chamado = detalhes,
-                            Identificacao = identificacao
-                        };
-
-                        ResultadoAnaliseIa analise;
-                        try
-                        {
-                            analise = await _analisador.AnalisarAsync(contexto, cancellationToken);
-                        }
-                        catch (Exception ex) when (ex is not OperationCanceledException)
-                        {
-                            analise = new ResultadoAnaliseIa
-                            {
-                                ResumoTecnico = $"[Erro na analise IA: {ex.Message}]",
-                                PerguntasSolicitante = [],
-                                ProximosPassos = []
-                            };
-                        }
-
-                        if (resultado.EhNovo)
-                        {
-                            novos++;
-                            Console.WriteLine($"  [#{chamado.Numero}] NOVO - {chamado.Titulo} -> {FormatarIdentificacao(identificacao)}");
-                            Console.WriteLine($"    IA: {analise.ResumoTecnico}");
-                        }
-                        else
-                        {
-                            alterados++;
-                            Console.WriteLine($"  [#{chamado.Numero}] ALTERADO - {chamado.Titulo} -> {FormatarIdentificacao(identificacao)}");
-                            Console.WriteLine($"    IA: {analise.ResumoTecnico}");
-                        }
-                    }
-                    else
-                    {
-                        ignorados++;
-                        Console.WriteLine($"  [#{chamado.Numero}] sem alteracoes - ignorado");
-                    }
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    Console.Error.WriteLine($"  [#{chamado.Numero}] ERRO: {ex.Message}");
-                    comErro++;
-                }
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("=== Resumo ===");
-            Console.WriteLine($"  Encontrados : {chamados.Count}");
-            Console.WriteLine($"  Elegiveis   : {elegiveis.Count}");
-            Console.WriteLine($"  Novos       : {novos}");
-            Console.WriteLine($"  Alterados   : {alterados}");
-            Console.WriteLine($"  Ignorados   : {ignorados}");
-            Console.WriteLine($"  Com erro    : {comErro}");
+            if (_modoAnalise)
+                await ExecutarAnaliseAsync(cancellationToken);
+            else
+                await ExecutarColetaAsync(cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -146,6 +59,133 @@ internal sealed partial class Program : IHostedService
         {
             _lifetime.StopApplication();
         }
+    }
+
+    private async Task ExecutarColetaAsync(CancellationToken cancellationToken)
+    {
+        Console.WriteLine("=== Iniciando pipeline de coleta GLPI ===");
+
+        await _dbInit.InicializarAsync(cancellationToken);
+        Console.WriteLine("Banco inicializado.");
+
+        var chamados = await _coletor.ColetarListaAsync(cancellationToken);
+        Console.WriteLine($"Chamados encontrados via GLPI: {chamados.Count}");
+
+        var elegiveis = FiltroChamados.FiltrarElegiveis(chamados, _configuracaoGlpi.Responsavel);
+        Console.WriteLine($"Chamados elegiveis apos filtro: {elegiveis.Count}");
+
+        var novos = 0;
+        var alterados = 0;
+        var ignorados = 0;
+        var comErro = 0;
+
+        foreach (var chamado in elegiveis)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var detalhes = await _coletor.ColetarDetalhesAsync(chamado, cancellationToken);
+                var hash = HashConteudoChamado.Calcular(detalhes.Descricao);
+                var hashAnterior = await _repositorio.ObterUltimoHashAsync(chamado.Numero, cancellationToken);
+                var resultado = ResultadoMudancaChamado.Avaliar(hashAnterior, hash);
+
+                if (resultado.FoiAlterado)
+                {
+                    await _repositorio.SalvarChamadoAsync(detalhes, hash, cancellationToken);
+
+                    var identificacao = IdentificadorSistemaPorPalavrasChave.Identificar(
+                        detalhes.Titulo,
+                        detalhes.Descricao ?? string.Empty,
+                        _sistemas);
+
+                    await _repositorio.PersistirIdentificacaoAsync(chamado.Numero, identificacao, cancellationToken);
+
+                    if (resultado.EhNovo)
+                    {
+                        novos++;
+                        Console.WriteLine($"  [#{chamado.Numero}] NOVO - {chamado.Titulo} -> {FormatarIdentificacao(identificacao)}");
+                    }
+                    else
+                    {
+                        alterados++;
+                        Console.WriteLine($"  [#{chamado.Numero}] ALTERADO - {chamado.Titulo} -> {FormatarIdentificacao(identificacao)}");
+                    }
+                }
+                else
+                {
+                    ignorados++;
+                    Console.WriteLine($"  [#{chamado.Numero}] sem alteracoes - ignorado");
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                Console.Error.WriteLine($"  [#{chamado.Numero}] ERRO: {ex.Message}");
+                comErro++;
+            }
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("=== Resumo ===");
+        Console.WriteLine($"  Encontrados : {chamados.Count}");
+        Console.WriteLine($"  Elegiveis   : {elegiveis.Count}");
+        Console.WriteLine($"  Novos       : {novos}");
+        Console.WriteLine($"  Alterados   : {alterados}");
+        Console.WriteLine($"  Ignorados   : {ignorados}");
+        Console.WriteLine($"  Com erro    : {comErro}");
+    }
+
+    private async Task ExecutarAnaliseAsync(CancellationToken cancellationToken)
+    {
+        Console.WriteLine("=== Iniciando pipeline de analise IA ===");
+
+        await _dbInit.InicializarAsync(cancellationToken);
+        Console.WriteLine("Banco inicializado.");
+
+        var chamados = await _repositorio.ObterChamadosNaoAnalisadosAsync(cancellationToken);
+        Console.WriteLine($"Chamados pendentes de analise: {chamados.Count}");
+
+        var analisados = 0;
+        var comErro = 0;
+
+        foreach (var chamado in chamados)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Console.WriteLine($"  [#{chamado.Numero}] Analisando: {chamado.Titulo}...");
+
+                var resultado = IdentificadorSistemaPorPalavrasChave.Identificar(
+                    chamado.Titulo,
+                    chamado.Descricao ?? string.Empty,
+                    _sistemas);
+
+                var contexto = new ContextoAnaliseChamado
+                {
+                    Chamado = chamado,
+                    Identificacao = resultado
+                };
+
+                var analise = await _analisador.AnalisarAsync(contexto, cancellationToken);
+
+                await _repositorio.SalvarAnaliseIaAsync(chamado.Numero, analise, cancellationToken);
+                await _repositorio.MarcarAnalisadoPorIaAsync(chamado.Numero, cancellationToken);
+
+                analisados++;
+                Console.WriteLine($"    IA: {analise.ResumoTecnico}");
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                Console.Error.WriteLine($"  [#{chamado.Numero}] ERRO IA: {ex.Message}");
+                comErro++;
+            }
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("=== Resumo Analise IA ===");
+        Console.WriteLine($"  Pendentes    : {chamados.Count}");
+        Console.WriteLine($"  Analisados   : {analisados}");
+        Console.WriteLine($"  Com erro     : {comErro}");
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
@@ -160,6 +200,8 @@ internal sealed partial class Program : IHostedService
 
     private static async Task Main(string[] args)
     {
+        _modoAnalise = args.Contains("--analisar");
+
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((ctx, config) =>
             {
@@ -169,10 +211,21 @@ internal sealed partial class Program : IHostedService
             {
                 var config = ctx.Configuration;
 
-                var configuracaoGlpi = config.GetSection("Glpi").Get<ConfiguracaoGlpi>()
-                    ?? throw new InvalidOperationException("Secao 'Glpi' nao encontrada em appsettings.json.");
+                var configuracaoGlpi = config.GetSection("Glpi").Get<ConfiguracaoGlpi>();
+                if (configuracaoGlpi is null && !_modoAnalise)
+                    throw new InvalidOperationException("Secao 'Glpi' nao encontrada em appsettings.json.");
+                configuracaoGlpi ??= new ConfiguracaoGlpi
+                {
+                    UrlBase = new Uri("http://localhost"),
+                    UsuarioLogin = "-",
+                    SenhaLogin = "-",
+                    Responsavel = "-",
+                    UserGlpiId = "0",
+                    StatusParaColetar = [1]
+                };
 
-                ValidarConfiguracao(configuracaoGlpi);
+                if (!_modoAnalise)
+                    ValidarConfiguracao(configuracaoGlpi);
 
                 var configuracaoBrowser = config.GetSection("Browser").Get<ConfiguracaoBrowser>()
                     ?? new ConfiguracaoBrowser();
