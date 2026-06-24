@@ -26,6 +26,17 @@
         <span class="material-symbols-rounded nav-icon" aria-hidden="true">psychology</span>
         <span class="@ObterClasseTexto()">Analises IA</span>
     </NavLink>
+
+    <div class="border-t border-[#003E7A]/30 my-2"></div>
+
+    <NavLink href="/executar"
+             class="@ObterClasseLink()"
+             ActiveClass="bg-[#003E7A] text-white shadow-lg"
+             title="Executar Pipeline"
+             @onclick="AoSelecionarItem">
+        <span class="material-symbols-rounded nav-icon" aria-hidden="true">play_arrow</span>
+        <span class="@ObterClasseTexto()">Executar</span>
+    </NavLink>
 </nav>
 
 @code {

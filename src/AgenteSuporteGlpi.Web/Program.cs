@@ -7,7 +7,10 @@ var construtor = WebApplication.CreateBuilder(args);
 var connectionString = construtor.Configuration.GetSection("Banco:ConnectionString").Value
     ?? "Data Source=../AgenteSuporteGlpi/dados/agente-suporte-glpi.db";
 
+var projetoRaiz = Path.GetFullPath(Path.Combine(construtor.Environment.ContentRootPath, "..", "AgenteSuporteGlpi"));
+
 construtor.Services.AddSingleton(new ServicoDashboard(connectionString));
+construtor.Services.AddSingleton(new ServicoPipeline(projetoRaiz));
 construtor.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 construtor.Services.AddApexCharts();

@@ -1,0 +1,126 @@
+@page "/executar"
+@rendermode InteractiveServer
+@inject ServicoPipeline Pipeline
+@implements IDisposable
+
+<PageTitle>Executar — Agente Suporte GLPI</PageTitle>
+<PageHeader Titulo="Executar Pipeline" />
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+        <div class="flex items-center gap-3 mb-4">
+            <span class="material-symbols-rounded text-2xl text-blue-600">cloud_download</span>
+            <div>
+                <h3 class="font-bold text-slate-900">Coleta GLPI</h3>
+                <p class="text-xs text-slate-500">Busca chamados da central, identifica sistema e persiste no SQLite.</p>
+            </div>
+        </div>
+        <button @onclick="ExecutarColetaAsync"
+                disabled="@Pipeline.Executando"
+                class="w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition @(Pipeline.Executando ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-blue-700 text-white hover:bg-blue-800")">
+            @if (_modoAtual == "Coleta" && Pipeline.Executando)
+            {
+                <span class="inline-flex items-center gap-2">
+                    <span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Executando...
+                </span>
+            }
+            else
+            {
+                <span>Executar Coleta</span>
+            }
+        </button>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+        <div class="flex items-center gap-3 mb-4">
+            <span class="material-symbols-rounded text-2xl text-purple-600">psychology</span>
+            <div>
+                <h3 class="font-bold text-slate-900">Analise IA</h3>
+                <p class="text-xs text-slate-500">Consulta SQLite, enriquece com SQL Server e DevOps, analisa com Ollama.</p>
+            </div>
+        </div>
+        <button @onclick="ExecutarAnaliseAsync"
+                disabled="@Pipeline.Executando"
+                class="w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition @(Pipeline.Executando ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-purple-700 text-white hover:bg-purple-800")">
+            @if (_modoAtual == "AnaliseIA" && Pipeline.Executando)
+            {
+                <span class="inline-flex items-center gap-2">
+                    <span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Executando...
+                </span>
+            }
+            else
+            {
+                <span>Executar Analise IA</span>
+            }
+        </button>
+    </div>
+</div>
+
+@if (Pipeline.Executando)
+{
+    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-5 flex items-center gap-3">
+        <span class="inline-block w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+        <p class="text-sm text-blue-800 font-medium">@_modoAtual em andamento. A pagina atualiza automaticamente.</p>
+    </div>
+}
+
+@if (_log.Count > 0)
+{
+    <div class="bg-slate-900 rounded-2xl shadow-sm p-5 font-mono text-xs overflow-auto max-h-96">
+        <h3 class="text-slate-400 text-xs font-semibold uppercase mb-3">Log de Execucao</h3>
+        <pre class="text-emerald-400 whitespace-pre-wrap leading-relaxed">@string.Join("\n", _log.Select(l => l))</pre>
+    </div>
+}
+
+@code {
+    private string? _modoAtual;
+    private List<string> _log = [];
+    private CancellationTokenSource? _cts;
+
+    protected override void OnInitialized()
+        => IniciarAtualizacao();
+
+    private void IniciarAtualizacao()
+    {
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        _ = AtualizarPeriodicamente(_cts.Token);
+    }
+
+    private async Task AtualizarPeriodicamente(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            _log = Pipeline.Log.ToList();
+            await InvokeAsync(StateHasChanged);
+
+            if (!Pipeline.Executando)
+                break;
+
+            await Task.Delay(1000, ct);
+        }
+
+        _log = Pipeline.Log.ToList();
+        _modoAtual = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ExecutarColetaAsync()
+    {
+        _modoAtual = "Coleta";
+        IniciarAtualizacao();
+        await Task.Run(() => Pipeline.ExecutarColetaAsync());
+    }
+
+    private async Task ExecutarAnaliseAsync()
+    {
+        _modoAtual = "AnaliseIA";
+        IniciarAtualizacao();
+        await Task.Run(() => Pipeline.ExecutarAnaliseAsync());
+    }
+
+    public void Dispose()
+        => _cts?.Cancel();
+}

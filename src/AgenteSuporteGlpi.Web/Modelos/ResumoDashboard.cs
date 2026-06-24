@@ -42,6 +42,8 @@ public sealed record AnaliseIaViewModel
     public string ResumoTecnico { get; init; } = "";
     public string PerguntasSolicitante { get; init; } = "";
     public string ProximosPassos { get; init; } = "";
+    public string? PossivelCausa { get; init; }
+    public string? PossivelSolucao { get; init; }
     public string DataAnalise { get; init; } = "";
     public string Link { get; init; } = "";
 }
@@ -65,6 +67,8 @@ public sealed record ChamadoDetalheViewModel
     public string? ResumoTecnicoIa { get; init; }
     public string? PerguntasIa { get; init; }
     public string? ProximosPassosIa { get; init; }
+    public string? PossivelCausaIa { get; init; }
+    public string? PossivelSolucaoIa { get; init; }
     public int TotalColetas { get; init; }
     public string? UltimaColeta { get; init; }
 }

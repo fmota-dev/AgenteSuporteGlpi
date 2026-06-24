@@ -87,13 +87,14 @@ public sealed class ServicoDashboard(string connectionString)
                    c.Solicitante, c.Categoria, c.DataAbertura, c.DataUltimaAtualizacao, c.Link,
                    COALESCE(i.Sistema,'-'), COALESCE(i.NivelConfianca,'-'), COALESCE(i.Pontuacao,0),
                    COALESCE(i.TermosEncontrados,'-'), a.ResumoTecnico, a.PerguntasSolicitante, a.ProximosPassos,
+                   a.PossivelCausa, a.PossivelSolucao,
                    (SELECT COUNT(*) FROM ColetasChamado WHERE NumeroChamado=c.Numero) AS TotalColetas,
                    (SELECT DataColeta FROM ColetasChamado WHERE NumeroChamado=c.Numero ORDER BY Id DESC LIMIT 1) AS UltimaColeta
             FROM Chamados c
             LEFT JOIN (SELECT NumeroChamado, Sistema, NivelConfianca, Pontuacao, TermosEncontrados FROM IdentificacoesSistema
                        WHERE Id IN (SELECT MAX(Id) FROM IdentificacoesSistema GROUP BY NumeroChamado)) i
                 ON c.Numero=i.NumeroChamado
-            LEFT JOIN (SELECT NumeroChamado, ResumoTecnico, PerguntasSolicitante, ProximosPassos FROM AnalisesIa
+            LEFT JOIN (SELECT NumeroChamado, ResumoTecnico, PerguntasSolicitante, ProximosPassos, PossivelCausa, PossivelSolucao FROM AnalisesIa
                        WHERE Id IN (SELECT MAX(Id) FROM AnalisesIa GROUP BY NumeroChamado)) a
                 ON c.Numero=a.NumeroChamado
             """;
@@ -122,8 +123,10 @@ public sealed class ServicoDashboard(string connectionString)
                 ResumoTecnicoIa = reader.IsDBNull(14) ? null : reader.GetString(14),
                 PerguntasIa = reader.IsDBNull(15) ? null : reader.GetString(15),
                 ProximosPassosIa = reader.IsDBNull(16) ? null : reader.GetString(16),
-                TotalColetas = reader.GetInt32(17),
-                UltimaColeta = reader.IsDBNull(18) ? null : reader.GetString(18)
+                PossivelCausaIa = reader.IsDBNull(17) ? null : reader.GetString(17),
+                PossivelSolucaoIa = reader.IsDBNull(18) ? null : reader.GetString(18),
+                TotalColetas = reader.GetInt32(19),
+                UltimaColeta = reader.IsDBNull(20) ? null : reader.GetString(20)
             });
         }
 
@@ -139,7 +142,8 @@ public sealed class ServicoDashboard(string connectionString)
         var cmd = conexao.CreateCommand();
         cmd.CommandText = """
             SELECT a.NumeroChamado, c.TituloAtual, COALESCE(i.Sistema,'-'),
-                   a.ResumoTecnico, a.PerguntasSolicitante, a.ProximosPassos, a.DataAnalise, c.Link
+                   a.ResumoTecnico, a.PerguntasSolicitante, a.ProximosPassos,
+                   a.PossivelCausa, a.PossivelSolucao, a.DataAnalise, c.Link
             FROM AnalisesIa a INNER JOIN Chamados c ON a.NumeroChamado=c.Numero
             LEFT JOIN (SELECT NumeroChamado, Sistema FROM IdentificacoesSistema
                        WHERE Id IN (SELECT MAX(Id) FROM IdentificacoesSistema GROUP BY NumeroChamado)) i
@@ -154,7 +158,10 @@ public sealed class ServicoDashboard(string connectionString)
             {
                 NumeroChamado = reader.GetInt32(0), TituloChamado = reader.GetString(1), Sistema = reader.GetString(2),
                 ResumoTecnico = reader.GetString(3), PerguntasSolicitante = reader.GetString(4),
-                ProximosPassos = reader.GetString(5), DataAnalise = reader.GetString(6), Link = reader.GetString(7)
+                ProximosPassos = reader.GetString(5),
+                PossivelCausa = reader.IsDBNull(6) ? null : reader.GetString(6),
+                PossivelSolucao = reader.IsDBNull(7) ? null : reader.GetString(7),
+                DataAnalise = reader.GetString(8), Link = reader.GetString(9)
             });
         }
 

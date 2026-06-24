@@ -28,6 +28,7 @@ else
                         <th class="px-5 py-3">#</th>
                         <th class="px-5 py-3">Titulo</th>
                         <th class="px-5 py-3">Sistema</th>
+                        <th class="px-5 py-3">Possivel Causa</th>
                         <th class="px-5 py-3">Resumo Tecnico</th>
                         <th class="px-5 py-3">Perguntas</th>
                         <th class="px-5 py-3">Data</th>
@@ -42,6 +43,7 @@ else
                             </td>
                             <td class="px-5 py-3 max-w-xs truncate">@a.TituloChamado</td>
                             <td class="px-5 py-3 font-medium">@a.Sistema</td>
+                            <td class="px-5 py-3 max-w-xs truncate">@a.PossivelCausa</td>
                             <td class="px-5 py-3 max-w-md truncate">@a.ResumoTecnico</td>
                             <td class="px-5 py-3">@ContarPerguntas(a.PerguntasSolicitante)</td>
                             <td class="px-5 py-3 whitespace-nowrap">@FormatarData(a.DataAnalise)</td>

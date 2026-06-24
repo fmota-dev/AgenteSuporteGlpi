@@ -68,6 +68,28 @@
                     <h3 class="text-base font-bold text-blue-800 uppercase tracking-wide">Analise IA</h3>
                 </div>
 
+                @if (!string.IsNullOrWhiteSpace(_detalhe.PossivelCausaIa))
+                {
+                    <div class="bg-white rounded-xl p-5 mb-4 shadow-inner border-l-4 border-amber-400">
+                        <p class="text-sm font-semibold text-amber-700 uppercase mb-2 flex items-center gap-1">
+                            <span class="material-symbols-rounded text-base">bug_report</span>
+                            Possivel Causa
+                        </p>
+                        <p class="text-base text-slate-800 leading-relaxed">@_detalhe.PossivelCausaIa</p>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_detalhe.PossivelSolucaoIa))
+                {
+                    <div class="bg-white rounded-xl p-5 mb-4 shadow-inner border-l-4 border-emerald-400">
+                        <p class="text-sm font-semibold text-emerald-700 uppercase mb-2 flex items-center gap-1">
+                            <span class="material-symbols-rounded text-base">lightbulb</span>
+                            Possivel Solucao
+                        </p>
+                        <p class="text-base text-slate-800 leading-relaxed">@_detalhe.PossivelSolucaoIa</p>
+                    </div>
+                }
+
                 <div class="bg-white rounded-xl p-5 mb-4 shadow-inner">
                     <p class="text-sm font-semibold text-slate-500 uppercase mb-2">Resumo Tecnico</p>
                     <p class="text-base text-slate-800 leading-relaxed">@_detalhe.ResumoTecnicoIa</p>
