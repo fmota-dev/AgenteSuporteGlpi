@@ -7,8 +7,8 @@ public sealed record ConfiguracaoDevOps
     public required string OrgUrl { get; init; }
     public required string Pat { get; init; }
     public string? ProjetoPadrao { get; init; }
-    public int TopArquivos { get; init; } = 5;
-    public int MaxLinhasPorArquivo { get; init; } = 200;
+    public int TopArquivos { get; init; } = 10;
+    public int MaxLinhasPorArquivo { get; init; } = 500;
 
     public static ConfiguracaoDevOps Carregar(IConfiguration configuration)
     {
