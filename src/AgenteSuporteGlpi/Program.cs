@@ -2,6 +2,7 @@
 using AgenteSuporteGlpi.Chamados;
 using AgenteSuporteGlpi.Configuracao;
 using AgenteSuporteGlpi.Contratos;
+using AgenteSuporteGlpi.IA;
 using AgenteSuporteGlpi.Sistemas;
 using AgenteSuporteGlpi.ColetaGlpi;
 using Microsoft.Extensions.Configuration;
@@ -18,6 +19,7 @@ internal sealed partial class Program : IHostedService
     private readonly InicializadorBanco _dbInit;
     private readonly ConfiguracaoGlpi _configuracaoGlpi;
     private readonly IReadOnlyList<SistemaConfigurado> _sistemas;
+    private readonly AnalisadorChamado _analisador;
 
     public Program(
         IHostApplicationLifetime lifetime,
@@ -25,7 +27,8 @@ internal sealed partial class Program : IHostedService
         IRepositorioChamados repositorio,
         InicializadorBanco dbInit,
         ConfiguracaoGlpi configuracaoGlpi,
-        IReadOnlyList<SistemaConfigurado> sistemas)
+        IReadOnlyList<SistemaConfigurado> sistemas,
+        AnalisadorChamado analisador)
     {
         _lifetime = lifetime;
         _coletor = coletor;
@@ -33,6 +36,7 @@ internal sealed partial class Program : IHostedService
         _dbInit = dbInit;
         _configuracaoGlpi = configuracaoGlpi;
         _sistemas = sistemas;
+        _analisador = analisador;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -77,15 +81,38 @@ internal sealed partial class Program : IHostedService
 
                         await _repositorio.PersistirIdentificacaoAsync(chamado.Numero, identificacao, cancellationToken);
 
+                        var contexto = new ContextoAnaliseChamado
+                        {
+                            Chamado = detalhes,
+                            Identificacao = identificacao
+                        };
+
+                        ResultadoAnaliseIa analise;
+                        try
+                        {
+                            analise = await _analisador.AnalisarAsync(contexto, cancellationToken);
+                        }
+                        catch (Exception ex) when (ex is not OperationCanceledException)
+                        {
+                            analise = new ResultadoAnaliseIa
+                            {
+                                ResumoTecnico = $"[Erro na analise IA: {ex.Message}]",
+                                PerguntasSolicitante = [],
+                                ProximosPassos = []
+                            };
+                        }
+
                         if (resultado.EhNovo)
                         {
                             novos++;
                             Console.WriteLine($"  [#{chamado.Numero}] NOVO - {chamado.Titulo} -> {FormatarIdentificacao(identificacao)}");
+                            Console.WriteLine($"    IA: {analise.ResumoTecnico}");
                         }
                         else
                         {
                             alterados++;
                             Console.WriteLine($"  [#{chamado.Numero}] ALTERADO - {chamado.Titulo} -> {FormatarIdentificacao(identificacao)}");
+                            Console.WriteLine($"    IA: {analise.ResumoTecnico}");
                         }
                     }
                     else
@@ -155,12 +182,18 @@ internal sealed partial class Program : IHostedService
 
                 var seletores = new SeletoresGlpi();
 
+                var configuracaoIa = ConfiguracaoIa.Carregar(config);
+                var agenteIa = FabricaAgente.Criar(configuracaoIa);
+
                 services.AddSingleton(configuracaoGlpi);
                 services.AddSingleton(configuracaoBrowser);
                 services.AddSingleton(configuracaoBanco);
                 var sistemas = ConfiguracaoSistemas.Carregar(config);
                 services.AddSingleton(sistemas);
                 services.AddSingleton(seletores);
+                services.AddSingleton(configuracaoIa);
+                services.AddSingleton(agenteIa);
+                services.AddSingleton<AnalisadorChamado>();
                 services.AddSingleton<InicializadorBanco>(_ => new InicializadorBanco(configuracaoBanco.ConnectionString));
                 services.AddSingleton<IRepositorioChamados, RepositorioChamados>(_ =>
                     new RepositorioChamados(configuracaoBanco.ConnectionString));
