@@ -6,7 +6,9 @@ using AgenteSuporteGlpi.Execucoes;
 using AgenteSuporteGlpi.IA;
 using AgenteSuporteGlpi.Sistemas;
 using AgenteSuporteGlpi.SqlServer;
+using AgenteSuporteGlpi.DevOps;
 using AgenteSuporteGlpi.ColetaGlpi;
+using System.Text;
 using System.Text.Json;
 using ConsultorSQLServer.Security;
 using ConsultorSQLServer.Services;
@@ -26,6 +28,7 @@ internal sealed partial class Program : IHostedService
     private readonly IReadOnlyList<SistemaConfigurado> _sistemas;
     private readonly AnalisadorChamado _analisador;
     private readonly IConsultaSqlServerSomenteLeitura _consultaSql;
+    private readonly IBuscaCodigoFonte _buscaCodigo;
 
     private static bool _modoAnalise;
 
@@ -37,7 +40,8 @@ internal sealed partial class Program : IHostedService
         ConfiguracaoGlpi configuracaoGlpi,
         IReadOnlyList<SistemaConfigurado> sistemas,
         AnalisadorChamado analisador,
-        IConsultaSqlServerSomenteLeitura consultaSql)
+        IConsultaSqlServerSomenteLeitura consultaSql,
+        IBuscaCodigoFonte buscaCodigo)
     {
         _lifetime = lifetime;
         _coletor = coletor;
@@ -47,6 +51,7 @@ internal sealed partial class Program : IHostedService
         _sistemas = sistemas;
         _analisador = analisador;
         _consultaSql = consultaSql;
+        _buscaCodigo = buscaCodigo;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -188,12 +193,15 @@ internal sealed partial class Program : IHostedService
                     _sistemas);
 
                 var contextoBanco = await EnriquecerContextoBancoAsync(resultado, execucaoId, cancellationToken);
+                var contextoCodigo = await EnriquecerContextoCodigoFonteAsync(
+                    resultado, chamado.Titulo, chamado.Descricao ?? "", execucaoId, cancellationToken);
 
                 var contexto = new ContextoAnaliseChamado
                 {
                     Chamado = chamado,
                     Identificacao = resultado,
-                    ContextoBanco = contextoBanco
+                    ContextoBanco = contextoBanco,
+                    ContextoCodigo = contextoCodigo
                 };
 
                 var analise = await _analisador.AnalisarAsync(contexto, cancellationToken);
@@ -303,6 +311,68 @@ internal sealed partial class Program : IHostedService
         }
     }
 
+    private async Task<string?> EnriquecerContextoCodigoFonteAsync(
+        ResultadoIdentificacaoSistema resultado,
+        string titulo,
+        string descricao,
+        long? execucaoId,
+        CancellationToken ct)
+    {
+        if (resultado.Confianca == NivelConfianca.NaoIdentificado)
+            return null;
+
+        try
+        {
+            var repos = await _buscaCodigo.ListarRepositoriosAsync(ct);
+            if (repos.Count == 0)
+                return null;
+
+            var sistema = resultado.Sistema!;
+            var termos = ExtrairTermosSistema(sistema.Nome);
+            var reposMatch = ResolverReposPorTermos(repos, termos);
+
+            if (reposMatch.Count == 0)
+            {
+                await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "Codigo Fonte",
+                    $"Nenhum repo compativel com '{sistema.Nome}' encontrado", null, ct);
+                return null;
+            }
+
+            await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "Codigo Fonte",
+                $"Repos: {string.Join(", ", reposMatch.Select(r => $"{r.Projeto}/{r.Nome}"))}", null, ct);
+
+            var termoBusca = ExtrairTermoBuscaCodigo(titulo, descricao, sistema.Nome);
+            var resultadoBusca = await _buscaCodigo.BuscarCodigoAsync(
+                termoBusca, reposMatch, 5, 200, ct);
+
+            await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "Codigo Fonte",
+                $"Busca '{termoBusca}': {resultadoBusca.TotalMatch} matches, top {resultadoBusca.Arquivos.Count} arquivos", null, ct);
+
+            if (resultadoBusca.Arquivos.Count == 0)
+                return null;
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"Termo buscado: '{termoBusca}'");
+            sb.AppendLine($"Total matches: {resultadoBusca.TotalMatch}");
+            sb.AppendLine();
+
+            foreach (var arquivo in resultadoBusca.Arquivos)
+            {
+                sb.AppendLine($"### {arquivo.Projeto}/{arquivo.Repositorio}/{arquivo.Caminho} ###");
+                sb.AppendLine(arquivo.Conteudo);
+                sb.AppendLine();
+            }
+
+            return sb.ToString();
+        }
+        catch (Exception ex)
+        {
+            await _repositorio.RegistrarEventoAsync(execucaoId, "Aviso", "Codigo Fonte",
+                $"Falha ao enriquecer contexto de codigo: {ex.Message}", null, ct);
+            return null;
+        }
+    }
+
     private static string[] ExtrairAliases(string jsonConexoes)
     {
         try
@@ -398,6 +468,67 @@ internal sealed partial class Program : IHostedService
         return nome;
     }
 
+    private static List<RepoAzureDevOps> ResolverReposPorTermos(IReadOnlyList<RepoAzureDevOps> repos, string[] termos)
+    {
+        var encontrados = new List<(RepoAzureDevOps Repo, int Pontuacao)>();
+
+        foreach (var repo in repos)
+        {
+            var nome = repo.Nome.ToUpperInvariant();
+            var pontuacao = CalcularMatch(nome, termos);
+
+            if (pontuacao > 0)
+                encontrados.Add((repo, pontuacao));
+        }
+
+        encontrados.Sort((a, b) =>
+        {
+            var cmp = b.Pontuacao.CompareTo(a.Pontuacao);
+            if (cmp != 0) return cmp;
+            return a.Repo.Nome.Length.CompareTo(b.Repo.Nome.Length);
+        });
+
+        return encontrados.Select(e => e.Repo).ToList();
+    }
+
+    private static string ExtrairTermoBuscaCodigo(string titulo, string descricao, string nomeSistema)
+    {
+        var palavras = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var partesTitulo = titulo.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var partesDescricao = descricao.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var p in partesTitulo.Where(p => p.Length > 3))
+            palavras.Add(p);
+
+        foreach (var p in partesDescricao.Where(p => p.Length > 3))
+            palavras.Add(p);
+
+        var sistemaTermos = ExtrairTermosSistema(nomeSistema);
+        foreach (var t in sistemaTermos)
+            palavras.Add(t);
+
+        var relevantes = palavras
+            .Select(w => w.TrimEnd('.', ',', ';', ':', '!', '?'))
+            .Where(w => w.Length > 3 && !PalavraGenerica(w))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(8)
+            .ToList();
+
+        return string.Join(" OR ", relevantes);
+    }
+
+    private static bool PalavraGenerica(string palavra)
+    {
+        var genericas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "sistema", "sistemas", "erro", "problema", "suporte",
+            "chamado", "favor", "olhar", "preciso", "precisamos",
+            "necessario", "urgente", "resolver", "resolução", "resolucao",
+            "para", "como", "onde", "quando", "sobre", "esta", "está"
+        };
+        return genericas.Contains(palavra);
+    }
+
     private static int CalcularMatch(string nomeBanco, string[] termos)
     {
         var upper = nomeBanco.ToUpperInvariant();
@@ -432,6 +563,12 @@ internal sealed partial class Program : IHostedService
 
                 --- Resumo Tecnico ---
                 {analise.ResumoTecnico}
+
+                --- Possivel Causa ---
+                {analise.PossivelCausa ?? "(nao informada pelo modelo)"}
+
+                --- Possivel Solucao ---
+                {analise.PossivelSolucao ?? "(nao informada pelo modelo)"}
 
                 --- Perguntas Solicitante ---
                 {string.Join("\n", analise.PerguntasSolicitante.Select((p, i) => $"{i + 1}. {p}"))}
@@ -524,6 +661,18 @@ internal sealed partial class Program : IHostedService
                 else
                 {
                     services.AddSingleton<IConsultaSqlServerSomenteLeitura, ConsultaSqlServerIndisponivel>();
+                }
+
+                try
+                {
+                    var configDevOps = ConfiguracaoDevOps.Carregar(config);
+                    services.AddSingleton(configDevOps);
+                    services.AddHttpClient<IBuscaCodigoFonte, BuscadorCodigoAzureDevOps>();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    Console.WriteLine($"AVISO: Azure DevOps nao configurado ({ex.Message}). Busca de codigo desabilitada.");
+                    services.AddSingleton<IBuscaCodigoFonte, BuscaCodigoIndisponivel>();
                 }
 
                 services.AddHostedService<Program>();

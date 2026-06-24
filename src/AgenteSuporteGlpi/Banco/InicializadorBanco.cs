@@ -73,6 +73,8 @@ public sealed class InicializadorBanco(string connectionString)
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 NumeroChamado INTEGER NOT NULL,
                 ResumoTecnico TEXT NOT NULL,
+                PossivelCausa TEXT NULL,
+                PossivelSolucao TEXT NULL,
                 PerguntasSolicitante TEXT NOT NULL,
                 ProximosPassos TEXT NOT NULL,
                 DataAnalise TEXT NOT NULL,
@@ -83,6 +85,8 @@ public sealed class InicializadorBanco(string connectionString)
         await comando.ExecuteNonQueryAsync(cancellationToken);
 
         await AdicionarColunaSeNaoExistirAsync(conexao, "Chamados", "AnalisadoPorIa", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await AdicionarColunaSeNaoExistirAsync(conexao, "AnalisesIa", "PossivelCausa", "TEXT NULL", cancellationToken);
+        await AdicionarColunaSeNaoExistirAsync(conexao, "AnalisesIa", "PossivelSolucao", "TEXT NULL", cancellationToken);
     }
 
     private static async Task AdicionarColunaSeNaoExistirAsync(

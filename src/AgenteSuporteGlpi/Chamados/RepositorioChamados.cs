@@ -139,11 +139,13 @@ public sealed class RepositorioChamados(string connectionString) : IRepositorioC
 
         var comando = conexao.CreateCommand();
         comando.CommandText = """
-            INSERT INTO AnalisesIa (NumeroChamado, ResumoTecnico, PerguntasSolicitante, ProximosPassos, DataAnalise)
-            VALUES ($numeroChamado, $resumo, $perguntas, $proximosPassos, $dataAnalise)
+            INSERT INTO AnalisesIa (NumeroChamado, ResumoTecnico, PossivelCausa, PossivelSolucao, PerguntasSolicitante, ProximosPassos, DataAnalise)
+            VALUES ($numeroChamado, $resumo, $possivelCausa, $possivelSolucao, $perguntas, $proximosPassos, $dataAnalise)
             """;
         comando.Parameters.AddWithValue("$numeroChamado", numeroChamado);
         comando.Parameters.AddWithValue("$resumo", analise.ResumoTecnico);
+        comando.Parameters.AddWithValue("$possivelCausa", (object?)analise.PossivelCausa ?? DBNull.Value);
+        comando.Parameters.AddWithValue("$possivelSolucao", (object?)analise.PossivelSolucao ?? DBNull.Value);
         comando.Parameters.AddWithValue("$perguntas", string.Join("|||", analise.PerguntasSolicitante));
         comando.Parameters.AddWithValue("$proximosPassos", string.Join("|||", analise.ProximosPassos));
         comando.Parameters.AddWithValue("$dataAnalise", DateTimeOffset.UtcNow.ToString("O"));

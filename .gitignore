@@ -16,6 +16,7 @@ coverage/
 # Configuracoes locais e segredos
 appsettings.Local.json
 *.local.json
+mcps/
 mcps/**/appsettings.json
 mcps/**/appsettings.local.json
 .env

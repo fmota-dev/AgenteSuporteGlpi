@@ -68,18 +68,29 @@ public sealed class AnalisadorChamado(AIAgent agente, ConfiguracaoIa configuraca
             sb.AppendLine(contexto.ContextoBanco);
         }
 
+        if (!string.IsNullOrWhiteSpace(contexto.ContextoCodigo))
+        {
+            sb.AppendLine();
+            sb.AppendLine("### Contexto do Codigo Fonte ###");
+            sb.AppendLine(contexto.ContextoCodigo);
+        }
+
         sb.AppendLine();
         sb.AppendLine("### Tarefa ###");
         sb.AppendLine("Analise o chamado acima e produza APENAS o seguinte formato JSON:");
         sb.AppendLine();
         sb.AppendLine("{");
         sb.AppendLine("  \"resumo_tecnico\": \"resumo curto e tecnico do problema (1-2 frases)\",");
+        sb.AppendLine("  \"possivel_causa\": \"causa raiz mais provavel com base no codigo e contexto\",");
+        sb.AppendLine("  \"possivel_solucao\": \"solucao tecnica sugerida com base no codigo e contexto\",");
         sb.AppendLine("  \"perguntas_solicitante\": [\"pergunta 1\", \"pergunta 2\"],");
         sb.AppendLine("  \"proximos_passos\": [\"passo 1\", \"passo 2\"]");
         sb.AppendLine("}");
         sb.AppendLine();
         sb.AppendLine("Regras:");
         sb.AppendLine("- O resumo deve ser tecnico e direto.");
+        sb.AppendLine("- possivel_causa: analise o codigo fonte (se disponivel) e o contexto para inferir a causa raiz. Seja especifico.");
+        sb.AppendLine("- possivel_solucao: sugira uma solucao concreta baseada no codigo. Mencione arquivos ou classes se relevante.");
         sb.AppendLine("- As perguntas sao para o solicitante esclarecer o problema.");
         sb.AppendLine("- Os proximos passos sao acoes tecnicas recomendadas.");
         sb.AppendLine("- Responda SOMENTE o JSON, sem texto adicional.");
@@ -96,6 +107,8 @@ public sealed class AnalisadorChamado(AIAgent agente, ConfiguracaoIa configuraca
             var root = doc.RootElement;
 
             var resumo = root.TryGetProperty("resumo_tecnico", out var r) ? r.GetString() ?? "" : "";
+            var possivelCausa = root.TryGetProperty("possivel_causa", out var pc) ? pc.GetString() : null;
+            var possivelSolucao = root.TryGetProperty("possivel_solucao", out var ps) ? ps.GetString() : null;
             var perguntas = root.TryGetProperty("perguntas_solicitante", out var p)
                 ? p.EnumerateArray().Select(x => x.GetString() ?? "").ToList()
                 : [];
@@ -106,6 +119,8 @@ public sealed class AnalisadorChamado(AIAgent agente, ConfiguracaoIa configuraca
             return new ResultadoAnaliseIa
             {
                 ResumoTecnico = resumo,
+                PossivelCausa = possivelCausa,
+                PossivelSolucao = possivelSolucao,
                 PerguntasSolicitante = perguntas.AsReadOnly(),
                 ProximosPassos = passos.AsReadOnly()
             };
