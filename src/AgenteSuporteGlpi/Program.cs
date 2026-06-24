@@ -235,50 +235,106 @@ internal sealed partial class Program : IHostedService
         if (resultado.Confianca == NivelConfianca.NaoIdentificado || resultado.Sistema?.Bancos is null)
             return null;
 
-        var alias = resultado.Sistema.Bancos.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(alias))
-            return null;
-
         try
         {
-            var jsonBancos = await _consultaSql.ListarBancosAsync(alias, ct);
-            var nomeBanco = ResolverBancoPorNomeSistema(jsonBancos, resultado.Sistema.Nome);
+            var jsonConexoes = await _consultaSql.ListarConexoesAsync(ct);
+            var aliases = ExtrairAliases(jsonConexoes);
+            if (aliases.Length == 0)
+                return null;
 
-            if (string.IsNullOrWhiteSpace(nomeBanco))
+            var termos = ExtrairTermosSistema(resultado.Sistema.Nome);
+            BancoEncontrado? prod = null;
+            BancoEncontrado? dev = null;
+
+            foreach (var alias in aliases)
+            {
+                try
+                {
+                    var jsonBancos = await _consultaSql.ListarBancosAsync(alias, ct);
+                    var encontrados = ResolverBancosPorTermos(jsonBancos, alias, termos);
+
+                    foreach (var b in encontrados)
+                    {
+                        if (b.EhDev && dev is null)
+                            dev = b;
+                        else if (!b.EhDev && prod is null)
+                            prod = b;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await _repositorio.RegistrarEventoAsync(execucaoId, "Aviso", "SQL Server",
+                        $"Erro ao listar bancos em {alias}: {ex.Message}", null, ct);
+                }
+            }
+
+            prod ??= dev;
+
+            if (prod is null)
             {
                 await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "SQL Server",
-                    $"Nenhum banco compatível com '{resultado.Sistema.Nome}' encontrado em {alias}", null, ct);
+                    $"Nenhum banco compatível com '{resultado.Sistema.Nome}' encontrado", null, ct);
                 return null;
             }
 
             await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "SQL Server",
-                $"Banco '{nomeBanco}' mapeado para '{resultado.Sistema.Nome}' em {alias}", null, ct);
+                $"Banco '{prod.Nome}' mapeado para '{resultado.Sistema.Nome}' em {prod.Alias} (prod)", null, ct);
 
-            var mapeamento = await _consultaSql.MapearBancoAsync(alias, nomeBanco, ct);
-            return $"Alias: {alias}\nBanco: {nomeBanco}\n{mapeamento}";
+            if (dev is not null && dev != prod)
+                await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "SQL Server",
+                    $"Banco DEV '{dev.Nome}' encontrado em {dev.Alias}", null, ct);
+
+            var mapeamento = await _consultaSql.MapearBancoAsync(prod.Alias, prod.Nome, ct);
+            var contexto = $"Alias: {prod.Alias}\nBanco: {prod.Nome}\n{mapeamento}";
+
+            if (dev is not null && dev != prod)
+            {
+                var mapeamentoDev = await _consultaSql.MapearBancoAsync(dev.Alias, dev.Nome, ct);
+                contexto += $"\n--- DEV ---\nAlias: {dev.Alias}\nBanco: {dev.Nome}\n{mapeamentoDev}";
+            }
+
+            return contexto;
         }
         catch (Exception ex)
         {
             await _repositorio.RegistrarEventoAsync(execucaoId, "Aviso", "SQL Server",
-                $"Falha ao consultar SQL Server {alias}: {ex.Message}", null, ct);
+                $"Falha ao enriquecer contexto de banco: {ex.Message}", null, ct);
             return null;
         }
     }
 
-    private static string? ResolverBancoPorNomeSistema(string jsonBancos, string nomeSistema)
+    private static string[] ExtrairAliases(string jsonConexoes)
     {
+        try
+        {
+            using var doc = JsonDocument.Parse(jsonConexoes);
+            if (!doc.RootElement.TryGetProperty("dados", out var dados))
+                return [];
+            if (!dados.TryGetProperty("conexoes", out var conexoes))
+                return [];
+
+            return conexoes.EnumerateArray()
+                .Select(c => c.GetProperty("alias").GetString() ?? string.Empty)
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .ToArray();
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private static List<BancoEncontrado> ResolverBancosPorTermos(string jsonBancos, string alias, string[] termos)
+    {
+        var encontrados = new List<BancoEncontrado>();
+
         try
         {
             using var doc = JsonDocument.Parse(jsonBancos);
             if (!doc.RootElement.TryGetProperty("dados", out var dados))
-                return null;
+                return encontrados;
             if (!dados.TryGetProperty("bancos", out var bancos))
-                return null;
-
-            var termos = ExtrairTermosSistema(nomeSistema);
-
-            string? melhorMatch = null;
-            var melhorPontuacao = 0;
+                return encontrados;
 
             foreach (var banco in bancos.EnumerateArray())
             {
@@ -289,20 +345,31 @@ internal sealed partial class Program : IHostedService
                 var nomeNormalizado = RemoverPrefixoBanco(nome);
                 var pontuacao = CalcularMatch(nomeNormalizado, termos);
 
-                if (pontuacao > melhorPontuacao)
-                {
-                    melhorPontuacao = pontuacao;
-                    melhorMatch = nome;
-                }
+                if (pontuacao > 0)
+                    encontrados.Add(new BancoEncontrado(nome, alias, nomeNormalizado, pontuacao, EhDevBanco(nome)));
             }
-
-            return melhorPontuacao > 0 ? melhorMatch : null;
         }
         catch
         {
-            return null;
         }
+
+        encontrados.Sort((a, b) =>
+        {
+            var cmp = b.Pontuacao.CompareTo(a.Pontuacao);
+            if (cmp != 0) return cmp;
+            return a.Nome.Length.CompareTo(b.Nome.Length);
+        });
+
+        return encontrados;
     }
+
+    private static bool EhDevBanco(string nomeBanco)
+    {
+        var upper = nomeBanco.ToUpperInvariant();
+        return upper.EndsWith("_DEV") || upper.EndsWith("_HOMOLOG") || upper.Contains("_DEV_");
+    }
+
+    private sealed record BancoEncontrado(string Nome, string Alias, string NomeNormalizado, int Pontuacao, bool EhDev);
 
     private static string[] ExtrairTermosSistema(string nomeSistema)
     {
@@ -324,7 +391,17 @@ internal sealed partial class Program : IHostedService
     private static int CalcularMatch(string nomeBanco, string[] termos)
     {
         var upper = nomeBanco.ToUpperInvariant();
-        return termos.Count(termo => upper.Contains(termo));
+        var pontuacao = 0;
+
+        foreach (var termo in termos)
+        {
+            if (upper == termo)
+                pontuacao += 100;
+            else if (upper.Contains(termo))
+                pontuacao += 1;
+        }
+
+        return pontuacao;
     }
 
     private static void SalvarLogAuditoriaIa(int numeroChamado, ResultadoIdentificacaoSistema identificacao, ResultadoAnaliseIa analise)

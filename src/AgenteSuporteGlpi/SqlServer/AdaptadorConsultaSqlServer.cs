@@ -5,6 +5,9 @@ namespace AgenteSuporteGlpi.SqlServer;
 
 public sealed class AdaptadorConsultaSqlServer(ConsultorSqlServerService service) : IConsultaSqlServerSomenteLeitura
 {
+    public Task<string> ListarConexoesAsync(CancellationToken cancellationToken)
+        => service.ListarConexoesConfiguradasAsync();
+
     public Task<string> ListarBancosAsync(string alias, CancellationToken cancellationToken)
         => service.ListarBancosAsync(alias);
 

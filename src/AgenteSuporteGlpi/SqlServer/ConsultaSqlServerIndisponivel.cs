@@ -4,6 +4,9 @@ namespace AgenteSuporteGlpi.SqlServer;
 
 public sealed class ConsultaSqlServerIndisponivel : IConsultaSqlServerSomenteLeitura
 {
+    public Task<string> ListarConexoesAsync(CancellationToken cancellationToken)
+        => Task.FromResult("{}");
+
     public Task<string> ListarBancosAsync(string alias, CancellationToken cancellationToken)
         => Task.FromResult("{}");
 
