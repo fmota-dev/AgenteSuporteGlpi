@@ -15,7 +15,7 @@
                 <p class="text-xs text-slate-500">Busca chamados da central, identifica sistema e persiste no SQLite.</p>
             </div>
         </div>
-        <button @onclick="ExecutarColetaAsync"
+        <button @onclick="DispararColetaAsync"
                 disabled="@Pipeline.Executando"
                 class="w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition @(Pipeline.Executando ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-blue-700 text-white hover:bg-blue-800")">
             @if (_modoAtual == "Coleta" && Pipeline.Executando)
@@ -40,7 +40,7 @@
                 <p class="text-xs text-slate-500">Consulta SQLite, enriquece com SQL Server e DevOps, analisa com Ollama.</p>
             </div>
         </div>
-        <button @onclick="ExecutarAnaliseAsync"
+        <button @onclick="DispararAnaliseAsync"
                 disabled="@Pipeline.Executando"
                 class="w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition @(Pipeline.Executando ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-purple-700 text-white hover:bg-purple-800")">
             @if (_modoAtual == "AnaliseIA" && Pipeline.Executando)
@@ -58,67 +58,153 @@
     </div>
 </div>
 
-@if (Pipeline.Executando)
+@if (_emExecucao)
 {
-    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-5 flex items-center gap-3">
-        <span class="inline-block w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
-        <p class="text-sm text-blue-800 font-medium">@_modoAtual em andamento. A pagina atualiza automaticamente.</p>
+    <div class="rounded-2xl p-4 mb-5 flex items-center gap-3 @(_status.Contains("concluida") ? "bg-emerald-50 border border-emerald-200" : "bg-blue-50 border border-blue-200")">
+        @if (_status.Contains("em andamento") || _status.Contains("iniciando"))
+        {
+            <span class="inline-block w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+        }
+        else
+        {
+            <span class="material-symbols-rounded text-lg @(_status.Contains("sucesso") ? "text-emerald-600" : "text-slate-500")">@(_status.Contains("sucesso") ? "check_circle" : "info")</span>
+        }
+        <p class="text-sm font-medium @(_status.Contains("concluida") ? "text-emerald-800" : "text-blue-800")">@_status</p>
     </div>
 }
 
-@if (_log.Count > 0)
+@if (_linhas.Count > 0)
 {
-    <div class="bg-slate-900 rounded-2xl shadow-sm p-5 font-mono text-xs overflow-auto max-h-96">
-        <h3 class="text-slate-400 text-xs font-semibold uppercase mb-3">Log de Execucao</h3>
-        <pre class="text-emerald-400 whitespace-pre-wrap leading-relaxed">@string.Join("\n", _log.Select(l => l))</pre>
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        @foreach (var (icone, cor, texto) in _linhas)
+        {
+            <div class="flex items-start gap-3 px-5 py-2.5 text-sm border-b border-slate-100 last:border-b-0">
+                <span class="material-symbols-rounded text-base mt-0.5 @cor">@icone</span>
+                <span class="text-slate-700">@texto</span>
+            </div>
+        }
     </div>
 }
 
 @code {
     private string? _modoAtual;
-    private List<string> _log = [];
+    private string _status = "";
+    private bool _emExecucao;
+    private readonly List<(string Icone, string Cor, string Texto)> _linhas = [];
     private CancellationTokenSource? _cts;
 
     protected override void OnInitialized()
-        => IniciarAtualizacao();
-
-    private void IniciarAtualizacao()
     {
-        _cts?.Cancel();
-        _cts = new CancellationTokenSource();
-        _ = AtualizarPeriodicamente(_cts.Token);
+        if (Pipeline.Executando)
+            _ = PollAsync(_cts = new CancellationTokenSource());
     }
 
-    private async Task AtualizarPeriodicamente(CancellationToken ct)
+    private async Task PollAsync(CancellationTokenSource cts)
     {
-        while (!ct.IsCancellationRequested)
+        var visto = 0;
+        while (!cts.Token.IsCancellationRequested)
         {
-            _log = Pipeline.Log.ToList();
+            var log = Pipeline.Log.ToList();
+            for (var i = visto; i < log.Count; i++)
+            {
+                var (icone, cor, texto) = TratarLinha(log[i]);
+                _linhas.Add((icone, cor, texto));
+            }
+            visto = log.Count;
+
+            _status = Pipeline.Executando ? $"{_modoAtual} em andamento..." : "";
             await InvokeAsync(StateHasChanged);
 
             if (!Pipeline.Executando)
+            {
+                if (_linhas.Count > 0)
+                {
+                    var ultima = _linhas.Last();
+                    _status = ultima.Texto.Contains("concluida") ? $"{_modoAtual} concluida com sucesso." : $"{_modoAtual} finalizada.";
+                }
+                _modoAtual = null;
+                await InvokeAsync(StateHasChanged);
                 break;
+            }
 
-            await Task.Delay(1000, ct);
+            await Task.Delay(500, cts.Token);
         }
-
-        _log = Pipeline.Log.ToList();
-        _modoAtual = null;
-        await InvokeAsync(StateHasChanged);
     }
 
-    private async Task ExecutarColetaAsync()
+    private async Task DispararColetaAsync()
     {
+        if (Pipeline.Executando) return;
         _modoAtual = "Coleta";
-        IniciarAtualizacao();
-        await Task.Run(() => Pipeline.ExecutarColetaAsync());
+        _linhas.Clear();
+        _status = "Coleta iniciando...";
+        _emExecucao = true;
+
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+
+        _ = ExecutarPipelineAsync(Pipeline.ExecutarColetaAsync, _cts);
     }
 
-    private async Task ExecutarAnaliseAsync()
+    private async Task DispararAnaliseAsync()
     {
+        if (Pipeline.Executando) return;
         _modoAtual = "AnaliseIA";
-        IniciarAtualizacao();
-        await Task.Run(() => Pipeline.ExecutarAnaliseAsync());
+        _linhas.Clear();
+        _status = "Analise IA iniciando...";
+        _emExecucao = true;
+
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+
+        _ = ExecutarPipelineAsync(Pipeline.ExecutarAnaliseAsync, _cts);
+    }
+
+    private async Task ExecutarPipelineAsync(Func<Task> pipeline, CancellationTokenSource cts)
+    {
+        _ = Task.Run(async () =>
+        {
+            try { await pipeline(); }
+            catch { }
+        });
+
+        _ = PollAsync(cts);
+    }
+
+    private static (string Icone, string Cor, string Texto) TratarLinha(string linha)
+    {
+        if (linha.StartsWith("[ERRO]"))
+            return ("error", "text-red-500", linha[6..].TrimStart());
+
+        var limpo = linha.TrimStart();
+
+        if (limpo.StartsWith("==="))
+            return ("bolt", "text-blue-600", limpo.TrimStart('=', ' '));
+
+        if (limpo.Contains("NOVO"))
+            return ("fiber_new", "text-emerald-600", limpo);
+
+        if (limpo.Contains("ALTERADO"))
+            return ("edit", "text-amber-500", limpo);
+
+        if (limpo.Contains("sem alteracoes"))
+            return ("check", "text-slate-400", limpo);
+
+        if (limpo.Contains("ERRO:"))
+            return ("error", "text-red-500", limpo);
+
+        if (limpo.StartsWith("IA:"))
+            return ("psychology", "text-purple-600", limpo);
+
+        if (limpo.Contains("concluida"))
+            return ("check_circle", "text-emerald-600", limpo);
+
+        if (limpo.Contains("FALHA:"))
+            return ("cancel", "text-red-500", limpo);
+
+        if (limpo.StartsWith("Chamados encontrados") || limpo.StartsWith("Chamados elegiveis"))
+            return ("search", "text-slate-500", limpo);
+
+        return ("", "text-slate-500", limpo);
     }
 
     public void Dispose()
