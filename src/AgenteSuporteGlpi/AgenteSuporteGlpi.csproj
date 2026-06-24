@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\mcps\ConsultorSQLServer\ConsultorSQLServer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

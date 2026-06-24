@@ -182,4 +182,69 @@ public sealed class RepositorioChamados(string connectionString) : IRepositorioC
         comando.Parameters.AddWithValue("$dataIdentificacao", DateTimeOffset.UtcNow.ToString("O"));
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
+
+    public async Task<long> IniciarExecucaoAsync(string modo, CancellationToken cancellationToken)
+    {
+        await using var conexao = new SqliteConnection(connectionString);
+        await conexao.OpenAsync(cancellationToken);
+
+        var comando = conexao.CreateCommand();
+        comando.CommandText = """
+            INSERT INTO ExecucoesColeta (Inicio, Status)
+            VALUES ($inicio, $status);
+            SELECT last_insert_rowid();
+            """;
+        comando.Parameters.AddWithValue("$inicio", DateTimeOffset.UtcNow.ToString("O"));
+        comando.Parameters.AddWithValue("$status", modo);
+
+        var result = await comando.ExecuteScalarAsync(cancellationToken);
+        return (long)result!;
+    }
+
+    public async Task FinalizarExecucaoAsync(long execucaoId, string status, int encontrada, int coletada, int ignorada, int comErro, string? mensagemErro, CancellationToken cancellationToken)
+    {
+        await using var conexao = new SqliteConnection(connectionString);
+        await conexao.OpenAsync(cancellationToken);
+
+        var comando = conexao.CreateCommand();
+        comando.CommandText = """
+            UPDATE ExecucoesColeta SET
+                Fim = $fim,
+                Status = $status,
+                QuantidadeEncontrada = $encontrada,
+                QuantidadeColetada = $coletada,
+                QuantidadeIgnorada = $ignorada,
+                QuantidadeComErro = $comErro,
+                MensagemErro = $mensagemErro
+            WHERE Id = $id
+            """;
+        comando.Parameters.AddWithValue("$fim", DateTimeOffset.UtcNow.ToString("O"));
+        comando.Parameters.AddWithValue("$status", status);
+        comando.Parameters.AddWithValue("$encontrada", encontrada);
+        comando.Parameters.AddWithValue("$coletada", coletada);
+        comando.Parameters.AddWithValue("$ignorada", ignorada);
+        comando.Parameters.AddWithValue("$comErro", comErro);
+        comando.Parameters.AddWithValue("$mensagemErro", (object?)mensagemErro ?? DBNull.Value);
+        comando.Parameters.AddWithValue("$id", execucaoId);
+        await comando.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task RegistrarEventoAsync(long? execucaoId, string nivel, string etapa, string mensagem, int? numeroChamado, CancellationToken cancellationToken)
+    {
+        await using var conexao = new SqliteConnection(connectionString);
+        await conexao.OpenAsync(cancellationToken);
+
+        var comando = conexao.CreateCommand();
+        comando.CommandText = """
+            INSERT INTO EventosExecucao (ExecucaoId, DataHora, Nivel, Etapa, Mensagem, NumeroChamado)
+            VALUES ($execucaoId, $dataHora, $nivel, $etapa, $mensagem, $numeroChamado)
+            """;
+        comando.Parameters.AddWithValue("$execucaoId", (object?)execucaoId ?? DBNull.Value);
+        comando.Parameters.AddWithValue("$dataHora", DateTimeOffset.UtcNow.ToString("O"));
+        comando.Parameters.AddWithValue("$nivel", nivel);
+        comando.Parameters.AddWithValue("$etapa", etapa);
+        comando.Parameters.AddWithValue("$mensagem", mensagem);
+        comando.Parameters.AddWithValue("$numeroChamado", (object?)numeroChamado ?? DBNull.Value);
+        await comando.ExecuteNonQueryAsync(cancellationToken);
+    }
 }

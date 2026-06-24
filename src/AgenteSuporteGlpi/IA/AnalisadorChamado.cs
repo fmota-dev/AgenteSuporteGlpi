@@ -61,6 +61,13 @@ public sealed class AnalisadorChamado(AIAgent agente, ConfiguracaoIa configuraca
             sb.AppendLine($"Motivo: {id.Motivo}");
         }
 
+        if (!string.IsNullOrWhiteSpace(contexto.ContextoBanco))
+        {
+            sb.AppendLine();
+            sb.AppendLine("### Contexto do Banco de Dados ###");
+            sb.AppendLine(contexto.ContextoBanco);
+        }
+
         sb.AppendLine();
         sb.AppendLine("### Tarefa ###");
         sb.AppendLine("Analise o chamado acima e produza APENAS o seguinte formato JSON:");

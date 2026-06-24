@@ -21,7 +21,8 @@ public sealed class InicializadorBanco(string connectionString)
                 Categoria TEXT NULL,
                 DataAbertura TEXT NOT NULL,
                 DataUltimaAtualizacao TEXT NOT NULL,
-                Link TEXT NOT NULL
+                Link TEXT NOT NULL,
+                AnalisadoPorIa INTEGER NOT NULL DEFAULT 0
             );
 
             CREATE TABLE IF NOT EXISTS ColetasChamado (
@@ -79,19 +80,27 @@ public sealed class InicializadorBanco(string connectionString)
             );
             """;
 
-        var alterarChamados = conexao.CreateCommand();
-        alterarChamados.CommandText = """
-            ALTER TABLE Chamados ADD COLUMN AnalisadoPorIa INTEGER NOT NULL DEFAULT 0
-            """;
+        await comando.ExecuteNonQueryAsync(cancellationToken);
+
+        await AdicionarColunaSeNaoExistirAsync(conexao, "Chamados", "AnalisadoPorIa", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+    }
+
+    private static async Task AdicionarColunaSeNaoExistirAsync(
+        SqliteConnection conexao,
+        string tabela,
+        string coluna,
+        string definicao,
+        CancellationToken cancellationToken)
+    {
+        var alterar = conexao.CreateCommand();
+        alterar.CommandText = $"ALTER TABLE {tabela} ADD COLUMN {coluna} {definicao}";
 
         try
         {
-            await alterarChamados.ExecuteNonQueryAsync(cancellationToken);
+            await alterar.ExecuteNonQueryAsync(cancellationToken);
         }
         catch (SqliteException ex) when (ex.SqliteErrorCode == 1)
         {
         }
-
-        await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 }

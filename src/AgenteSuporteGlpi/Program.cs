@@ -2,9 +2,13 @@
 using AgenteSuporteGlpi.Chamados;
 using AgenteSuporteGlpi.Configuracao;
 using AgenteSuporteGlpi.Contratos;
+using AgenteSuporteGlpi.Execucoes;
 using AgenteSuporteGlpi.IA;
 using AgenteSuporteGlpi.Sistemas;
+using AgenteSuporteGlpi.SqlServer;
 using AgenteSuporteGlpi.ColetaGlpi;
+using ConsultorSQLServer.Security;
+using ConsultorSQLServer.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -20,6 +24,7 @@ internal sealed partial class Program : IHostedService
     private readonly ConfiguracaoGlpi _configuracaoGlpi;
     private readonly IReadOnlyList<SistemaConfigurado> _sistemas;
     private readonly AnalisadorChamado _analisador;
+    private readonly IConsultaSqlServerSomenteLeitura _consultaSql;
 
     private static bool _modoAnalise;
 
@@ -30,7 +35,8 @@ internal sealed partial class Program : IHostedService
         InicializadorBanco dbInit,
         ConfiguracaoGlpi configuracaoGlpi,
         IReadOnlyList<SistemaConfigurado> sistemas,
-        AnalisadorChamado analisador)
+        AnalisadorChamado analisador,
+        IConsultaSqlServerSomenteLeitura consultaSql)
     {
         _lifetime = lifetime;
         _coletor = coletor;
@@ -39,6 +45,7 @@ internal sealed partial class Program : IHostedService
         _configuracaoGlpi = configuracaoGlpi;
         _sistemas = sistemas;
         _analisador = analisador;
+        _consultaSql = consultaSql;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -68,11 +75,16 @@ internal sealed partial class Program : IHostedService
         await _dbInit.InicializarAsync(cancellationToken);
         Console.WriteLine("Banco inicializado.");
 
+        var execucaoId = await _repositorio.IniciarExecucaoAsync("Coleta", cancellationToken);
+        await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "Inicio", "Pipeline de coleta iniciado", null, cancellationToken);
+
         var chamados = await _coletor.ColetarListaAsync(cancellationToken);
         Console.WriteLine($"Chamados encontrados via GLPI: {chamados.Count}");
+        await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "ColetaLista", $"Encontrados: {chamados.Count}", null, cancellationToken);
 
         var elegiveis = FiltroChamados.FiltrarElegiveis(chamados, _configuracaoGlpi.Responsavel);
         Console.WriteLine($"Chamados elegiveis apos filtro: {elegiveis.Count}");
+        await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "Filtro", $"Elegiveis: {elegiveis.Count}", null, cancellationToken);
 
         var novos = 0;
         var alterados = 0;
@@ -100,6 +112,9 @@ internal sealed partial class Program : IHostedService
                         _sistemas);
 
                     await _repositorio.PersistirIdentificacaoAsync(chamado.Numero, identificacao, cancellationToken);
+                    await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "Persistencia",
+                        $"Chamado #{chamado.Numero} salvo. Sistema: {(identificacao.Sistema?.Nome ?? "?")} ({identificacao.Confianca}, {identificacao.Pontuacao}pts)",
+                        chamado.Numero, cancellationToken);
 
                     if (resultado.EhNovo)
                     {
@@ -121,9 +136,16 @@ internal sealed partial class Program : IHostedService
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 Console.Error.WriteLine($"  [#{chamado.Numero}] ERRO: {ex.Message}");
+                await _repositorio.RegistrarEventoAsync(execucaoId, "Erro", "Chamado",
+                    $"Erro #{chamado.Numero}: {ex.Message}", chamado.Numero, cancellationToken);
                 comErro++;
             }
         }
+
+        var statusFinal = comErro > 0 ? "ConcluidoComErros" : "Concluido";
+        await _repositorio.FinalizarExecucaoAsync(execucaoId, statusFinal, chamados.Count, novos + alterados, ignorados, comErro, null, cancellationToken);
+        await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "Fim",
+            $"Execucao {statusFinal}: {novos} novos, {alterados} alterados, {ignorados} ignorados, {comErro} erros", null, cancellationToken);
 
         Console.WriteLine();
         Console.WriteLine("=== Resumo ===");
@@ -142,8 +164,12 @@ internal sealed partial class Program : IHostedService
         await _dbInit.InicializarAsync(cancellationToken);
         Console.WriteLine("Banco inicializado.");
 
+        var execucaoId = await _repositorio.IniciarExecucaoAsync("AnaliseIA", cancellationToken);
+        await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "Inicio", "Pipeline de analise IA iniciado", null, cancellationToken);
+
         var chamados = await _repositorio.ObterChamadosNaoAnalisadosAsync(cancellationToken);
         Console.WriteLine($"Chamados pendentes de analise: {chamados.Count}");
+        await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "Consulta", $"Pendentes: {chamados.Count}", null, cancellationToken);
 
         var analisados = 0;
         var comErro = 0;
@@ -160,16 +186,24 @@ internal sealed partial class Program : IHostedService
                     chamado.Descricao ?? string.Empty,
                     _sistemas);
 
+                var contextoBanco = await EnriquecerContextoBancoAsync(resultado, cancellationToken);
+
                 var contexto = new ContextoAnaliseChamado
                 {
                     Chamado = chamado,
-                    Identificacao = resultado
+                    Identificacao = resultado,
+                    ContextoBanco = contextoBanco
                 };
 
                 var analise = await _analisador.AnalisarAsync(contexto, cancellationToken);
 
                 await _repositorio.SalvarAnaliseIaAsync(chamado.Numero, analise, cancellationToken);
                 await _repositorio.MarcarAnalisadoPorIaAsync(chamado.Numero, cancellationToken);
+                await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "AnaliseIA",
+                    $"Chamado #{chamado.Numero} analisado. Resumo: {analise.ResumoTecnico[..Math.Min(analise.ResumoTecnico.Length, 120)]}",
+                    chamado.Numero, cancellationToken);
+
+                SalvarLogAuditoriaIa(chamado.Numero, resultado, analise);
 
                 analisados++;
                 Console.WriteLine($"    IA: {analise.ResumoTecnico}");
@@ -177,15 +211,77 @@ internal sealed partial class Program : IHostedService
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 Console.Error.WriteLine($"  [#{chamado.Numero}] ERRO IA: {ex.Message}");
+                await _repositorio.RegistrarEventoAsync(execucaoId, "Erro", "AnaliseIA",
+                    $"Erro #{chamado.Numero}: {ex.Message}", chamado.Numero, cancellationToken);
                 comErro++;
             }
         }
+
+        var statusFinal = comErro > 0 ? "ConcluidoComErros" : "Concluido";
+        await _repositorio.FinalizarExecucaoAsync(execucaoId, statusFinal, chamados.Count, analisados, 0, comErro, null, cancellationToken);
+        await _repositorio.RegistrarEventoAsync(execucaoId, "Info", "Fim",
+            $"Analise IA {statusFinal}: {analisados} analisados, {comErro} erros", null, cancellationToken);
 
         Console.WriteLine();
         Console.WriteLine("=== Resumo Analise IA ===");
         Console.WriteLine($"  Pendentes    : {chamados.Count}");
         Console.WriteLine($"  Analisados   : {analisados}");
         Console.WriteLine($"  Com erro     : {comErro}");
+    }
+
+    private async Task<string?> EnriquecerContextoBancoAsync(ResultadoIdentificacaoSistema resultado, CancellationToken ct)
+    {
+        if (resultado.Confianca == NivelConfianca.NaoIdentificado || resultado.Sistema?.Bancos is null)
+            return null;
+
+        var alias = resultado.Sistema.Bancos.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(alias))
+            return null;
+
+        try
+        {
+            var mapeamento = await _consultaSql.MapearBancoAsync(alias, string.Empty, ct);
+            return $"Alias: {alias}\n{mapeamento}";
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static void SalvarLogAuditoriaIa(int numeroChamado, ResultadoIdentificacaoSistema identificacao, ResultadoAnaliseIa analise)
+    {
+        try
+        {
+            var dir = Path.Combine(AppContext.BaseDirectory, "logs");
+            Directory.CreateDirectory(dir);
+
+            var arquivo = Path.Combine(dir, $"ia-{numeroChamado}-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.txt");
+            var conteudo = $"""
+                === Auditoria Analise IA ===
+                Data: {DateTimeOffset.UtcNow:O}
+                Chamado: #{numeroChamado}
+                Sistema: {(identificacao.Sistema?.Nome ?? "NaoIdentificado")}
+                Confianca: {identificacao.Confianca} ({identificacao.Pontuacao}pts)
+                Termos: {string.Join("; ", identificacao.TermosEncontrados)}
+
+                --- Resumo Tecnico ---
+                {analise.ResumoTecnico}
+
+                --- Perguntas Solicitante ---
+                {string.Join("\n", analise.PerguntasSolicitante.Select((p, i) => $"{i + 1}. {p}"))}
+
+                --- Proximos Passos ---
+                {string.Join("\n", analise.ProximosPassos.Select((p, i) => $"{i + 1}. {p}"))}
+                """;
+
+            File.WriteAllText(arquivo, conteudo);
+            Console.WriteLine($"    Auditoria salva: {arquivo}");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"    ERRO ao salvar auditoria IA: {ex.Message}");
+        }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
@@ -251,6 +347,20 @@ internal sealed partial class Program : IHostedService
                 services.AddSingleton<IRepositorioChamados, RepositorioChamados>(_ =>
                     new RepositorioChamados(configuracaoBanco.ConnectionString));
                 services.AddSingleton<IColetorGlpi, ColetorGlpiPlaywright>();
+
+                if (config.GetSection("ConnectionStrings").GetChildren().Any())
+                {
+                    services.AddSingleton<SqlConnectionCatalog>();
+                    services.AddSingleton<SqlReadOnlyGuard>();
+                    services.AddSingleton<MetadataCache>();
+                    services.AddSingleton<ConsultorSqlServerService>();
+                    services.AddSingleton<IConsultaSqlServerSomenteLeitura, AdaptadorConsultaSqlServer>();
+                }
+                else
+                {
+                    services.AddSingleton<IConsultaSqlServerSomenteLeitura, ConsultaSqlServerIndisponivel>();
+                }
+
                 services.AddHostedService<Program>();
             })
             .Build();
