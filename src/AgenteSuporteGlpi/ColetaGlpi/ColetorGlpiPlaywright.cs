@@ -20,8 +20,6 @@ public sealed class ColetorGlpiPlaywright : IColetorGlpi
 
     public async Task<IReadOnlyList<ChamadoColetado>> ColetarListaAsync(CancellationToken ct)
     {
-        var resultados = new List<ChamadoColetado>(_configuracaoGlpi.LimiteChamadosPorExecucao);
-
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync(new()
         {
@@ -29,6 +27,65 @@ public sealed class ColetorGlpiPlaywright : IColetorGlpi
         });
 
         var page = await AbrirPaginaAutenticadaAsync(browser, ct);
+
+        var resultados = await ColetarListaDaCentralAsync(page, ct);
+
+        if (resultados.Count == 0)
+            resultados = await ColetarListaPorFiltroAsync(page, ct);
+
+        return resultados;
+    }
+
+    private async Task<IReadOnlyList<ChamadoColetado>> ColetarListaDaCentralAsync(IPage page, CancellationToken ct)
+    {
+        var resultados = new List<ChamadoColetado>(_configuracaoGlpi.LimiteChamadosPorExecucao);
+
+        var urlCentral = new Uri(_configuracaoGlpi.UrlBase, "/front/central.php").ToString();
+        await page.GotoAsync(urlCentral, new() { WaitUntil = WaitUntilState.NetworkIdle });
+        await BloquearFluxosInesperadosAsync(page);
+
+        await page.WaitForSelectorAsync("main", new()
+        {
+            State = WaitForSelectorState.Visible,
+            Timeout = _configuracaoBrowser.TimeoutMilissegundos,
+        });
+
+        var links = await page.Locator("main a[href*='ticket.form.php?id=']").AllAsync();
+
+        foreach (var link in links)
+        {
+            if (resultados.Count >= _configuracaoGlpi.LimiteChamadosPorExecucao)
+                break;
+
+            ct.ThrowIfCancellationRequested();
+
+            var href = await link.GetAttributeAsync("href");
+            if (string.IsNullOrWhiteSpace(href))
+                continue;
+
+            var titulo = (await link.TextContentAsync())?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(titulo))
+                continue;
+
+            var match = System.Text.RegularExpressions.Regex.Match(href, @"id=(\d+)");
+            if (!match.Success || !int.TryParse(match.Groups[1].Value, out var numero))
+                continue;
+
+            var linkUri = new Uri(_configuracaoGlpi.UrlBase, href);
+
+            var status = StatusChamado.Novo;
+
+            resultados.Add(new ChamadoColetado(
+                numero, titulo, status, "Média", _configuracaoGlpi.Responsavel,
+                DateTimeOffset.UtcNow, linkUri));
+        }
+
+        return resultados;
+    }
+
+    private async Task<IReadOnlyList<ChamadoColetado>> ColetarListaPorFiltroAsync(IPage page, CancellationToken ct)
+    {
+        var resultados = new List<ChamadoColetado>(_configuracaoGlpi.LimiteChamadosPorExecucao);
 
         foreach (var statusId in _configuracaoGlpi.StatusParaColetar)
         {
@@ -94,7 +151,16 @@ public sealed class ColetorGlpiPlaywright : IColetorGlpi
         await Task.Delay(_configuracaoBrowser.TimeoutEsperaAjaxMilissegundos, ct);
 
         var html = await page.Locator(_seletores.ConteudoChamado).InnerHTMLAsync();
-        return ParserDetalhesChamado.Converter(html, chamado.Link);
+
+        try
+        {
+            return ParserDetalhesChamado.Converter(html, chamado);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new InvalidOperationException(
+                $"Falha ao parsear HTML do chamado #{chamado.Numero}: {ex.Message}", ex);
+        }
     }
 
     private async Task<IPage> AbrirPaginaAutenticadaAsync(IBrowser browser, CancellationToken ct)
