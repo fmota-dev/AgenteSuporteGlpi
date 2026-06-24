@@ -62,20 +62,30 @@ public sealed class BuscadorCodigoAzureDevOps : IBuscaCodigoFonte
         var searchBody = new
         {
             searchText = termoBusca,
-            skip = 0,
-            top = topArquivos,
-            filters = new
+            __skip = 0,
+            __top = topArquivos,
+            filters = new Dictionary<string, object>
             {
-                Repository = new
+                ["Repository"] = new Dictionary<string, object>
                 {
-                    repository = repos.Select(r => r.Nome).ToArray()
+                    ["repository"] = repos.Select(r => r.Nome).ToArray()
                 }
+            },
+            __orderBy = new object[]
+            {
+                new { field = "path", sortOrder = "desc" }
             }
         };
 
+        var requestJson = JsonSerializer.Serialize(searchBody, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = new SkipTopNamingPolicy()
+        });
+
         var url = $"https://almsearch.dev.azure.com/{orgName}/{projeto}/_apis/search/codesearchresults?api-version=7.1";
 
-        var response = await _http.PostAsJsonAsync(url, searchBody, ct);
+        var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
+        var response = await _http.PostAsync(url, content, ct);
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync(ct);
@@ -152,5 +162,15 @@ public sealed class BuscadorCodigoAzureDevOps : IBuscaCodigoFonte
     {
         var uri = new Uri(orgUrl.TrimEnd('/'));
         return uri.Segments.Length >= 2 ? uri.Segments[1].Trim('/') : uri.Host.Split('.')[0];
+    }
+
+    private sealed class SkipTopNamingPolicy : JsonNamingPolicy
+    {
+        public override string ConvertName(string name)
+        {
+            if (name.StartsWith("__"))
+                return "$" + name.Substring(2);
+            return name;
+        }
     }
 }

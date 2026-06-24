@@ -485,6 +485,14 @@ internal sealed partial class Program : IHostedService
         {
             var cmp = b.Pontuacao.CompareTo(a.Pontuacao);
             if (cmp != 0) return cmp;
+
+            var aPrefixo = a.Repo.Nome.StartsWith("SNC_", StringComparison.OrdinalIgnoreCase) ||
+                           a.Repo.Nome.StartsWith("FCM_", StringComparison.OrdinalIgnoreCase) ? 0 : 1;
+            var bPrefixo = b.Repo.Nome.StartsWith("SNC_", StringComparison.OrdinalIgnoreCase) ||
+                           b.Repo.Nome.StartsWith("FCM_", StringComparison.OrdinalIgnoreCase) ? 0 : 1;
+            cmp = aPrefixo.CompareTo(bPrefixo);
+            if (cmp != 0) return cmp;
+
             return a.Repo.Nome.Length.CompareTo(b.Repo.Nome.Length);
         });
 
